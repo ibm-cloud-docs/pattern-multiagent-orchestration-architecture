@@ -20,16 +20,11 @@ Multi-Agent Orchestration Reference Architecture Pattern
 
 
 # Multi-Agent Orchestration Reference Architecture
+{: #multi-agent-orchestration-reference-architecture}
 
-**IBM Cloud · watsonx Platform**
-*A pattern for the IBM Cloud AI Well-Architected Framework*
-Version 2.0 · Architecture Pattern · watsonx Orchestrate + MCP + A2A · Revised June 2026
-
-> **Revision note (v2.0).** This revision corrects several items that had become inaccurate or out of date: the MCP/A2A protocol split (MCP is the agent-to-tool standard; A2A is the agent-to-agent standard, and watsonx Orchestrate supports both); the IBM + Anthropic relationship (IBM *authored* the ADLC guide, which Anthropic *verified*); the ADLC phase names; current Granite model versions (4.x); the retirement of IBM Log Analysis (now IBM Cloud Logs); the status of IBM Sovereign Core (tech preview Feb 2026, GA planned mid-2026); and the competitive landscape (AWS Bedrock AgentCore and Azure AI Foundry Agent Service now offer agent observability and governance, and Google originated A2A).
-
----
 
 ## Pattern overview
+{: #pattern-overview}
 
 | Element | Selection |
 |---|---|
@@ -38,14 +33,16 @@ Version 2.0 · Architecture Pattern · watsonx Orchestrate + MCP + A2A · Revise
 | Agent-to-agent protocol | **Agent-to-Agent (A2A)** — originated by Google, governed by the Linux Foundation |
 | Governance layer | **watsonx.governance** (model + agentic governance) |
 | Observability | **IBM Instana + OpenTelemetry** |
+{: caption="Pattern overview components" caption-side="bottom"}
 
 **Scope.** This reference architecture defines the design, deployment, and operational patterns for building production-grade multi-agent systems on IBM Cloud using watsonx Orchestrate as the orchestration plane, MCP for tool and data integration, and A2A for agent-to-agent collaboration. It covers supervisor/sub-agent hierarchies, persistent agent memory, MCP/A2A topology, governance wiring, and observability — producing a Terraform-deployable architecture comparable in depth to Azure AI Foundry Agent Service and AWS Bedrock AgentCore patterns.
 
 *Key figures:* extensive prebuilt watsonx Orchestrate connector and agent catalogue · 7 architecture layers · 9 ADRs · 5 governance checkpoints.
 
----
+
 
 ## Executive Summary
+{: #executive-summary}
 
 Enterprise AI has crossed the threshold from single-model inference to coordinated networks of autonomous agents. IBM's watsonx Orchestrate — generally available with a large catalogue of enterprise connectors and prebuilt agents — combined with the open Model Context Protocol (MCP) and the open Agent-to-Agent (A2A) protocol, provides a technical foundation for production-grade multi-agent systems. This document defines a seven-layer reference architecture — from user interface through to governance audit trails — that is opinionated, Terraform-deployable, and benchmarked against comparable patterns from AWS (Bedrock AgentCore) and Azure (AI Foundry Agent Service).
 
@@ -53,17 +50,20 @@ IBM's differentiator in this space is **not** orchestration capability alone, an
 
 > **Architecture Decision.** This pattern uses watsonx Orchestrate as the multi-agent control plane over custom-built orchestration because it is production-ready, provides an extensive enterprise connector catalogue, supports open MCP and A2A protocols, and integrates natively with watsonx.governance for agent audit and evaluation. Custom frameworks (LangGraph, AutoGen, CrewAI) remain valid for specific sub-agent implementations and can be registered as A2A collaborators or exposed via MCP — not as replacement orchestrators.
 
----
+
 
 ## Context and Problem Statement
+{: #context-and-problem-statement}
 
 ### Why Multi-Agent Architecture
+{: #why-multi-agent-architecture}
 
 Single-model inference patterns — including RAG — are insufficient for enterprise workflows that require parallel execution of heterogeneous tasks, specialised domain expertise across multiple models, tool use with external systems, iterative reasoning with feedback loops, and long-running stateful workflows with human-in-the-loop checkpoints.
 
 Multi-agent systems address this by decomposing complex goals into sub-tasks, routing each to a specialised agent, coordinating the results, and maintaining shared context — all governed by an orchestration plane that handles failure, retry, and escalation.
 
 ### IBM's Strategic Position
+{: #ibms-strategic-position}
 
 At IBM Think 2025 and 2026, IBM positioned agentic AI as a primary enterprise value-delivery mechanism for watsonx. Developments that make this architecture timely:
 
@@ -79,8 +79,10 @@ At IBM Think 2025 and 2026, IBM positioned agentic AI as a primary enterprise va
 ---
 
 ## Architecture Overview
+{: #architecture-overview}
 
 ### Seven-Layer Model
+{: #seven-layer-model}
 
 The reference architecture is structured into seven horizontal layers. Each layer has defined responsibilities, IBM Cloud service assignments, failure modes, and integration contracts with adjacent layers. The layered model ensures separation of concerns — governance does not bleed into routing; memory does not couple to inference.
 
@@ -93,8 +95,10 @@ The reference architecture is structured into seven horizontal layers. Each laye
 | **L5 Memory** | Db2 (relational + vector) — long-term agent memory · Milvus on watsonx.data — semantic retrieval · IBM Cloud Object Storage — artefact store · Redis — ephemeral session cache |
 | **L6 Observability** | IBM Instana — end-to-end agent tracing · OpenTelemetry collector — trace aggregation · watsonx.governance — quality & drift thresholds · IBM Cloud Logs — structured log pipeline |
 | **L7 Governance** | watsonx.governance — agent behaviour audit & evaluation · IBM OpenPages — risk & compliance evidence · IBM IAM — RBAC for agent permissions · IBM Sovereign Core — runtime compliance controls (preview → GA mid-2026) |
+{: caption="Seven-layer architecture model" caption-side="bottom"}
 
 ### Data Flow: Request Lifecycle
+{: #data-flow-request-lifecycle}
 
 1. User sends a natural-language request. IBM API Connect (L1) authenticates via IBM Cloud IAM, checks token budget against the tenant quota, and queries the Redis semantic cache. On a cache hit, the cached response is returned immediately and the interaction is logged to watsonx.governance.
 2. On a cache miss, API Connect forwards the request to watsonx Orchestrate (L2). The supervisor agent classifies intent, decomposes the goal into a directed acyclic graph (DAG) of sub-tasks, and loads conversation history from the Db2 conversation state store.
@@ -104,11 +108,13 @@ The reference architecture is structured into seven horizontal layers. Each laye
 6. IBM Instana (L6) assembles the distributed trace across all hops into a single correlated request span. Token cost, per-agent latency, and tool-call counts are attributed to the originating tenant. Threshold violations alert (e.g., via PagerDuty).
 7. watsonx.governance (L7) records the complete interaction: agents invoked, tools and external agents called, data accessed (and jurisdiction), model versions, and final output. IBM OpenPages ingests the record for regulatory evidence. IBM Sovereign Core validates that no data left its designated jurisdiction.
 
----
+
 
 ## Layer Specifications
+{: #layer-specifications}
 
 ### Layer 1 — Consumer & AI Gateway
+{: #layer-1-consumer-ai-gateway}
 
 **Responsibilities.** L1 is the single entry point for all agent interactions. It enforces authentication, applies rate limiting and token budgeting per tenant, routes to the correct agent pipeline, and returns cached responses where available. No request reaches the orchestration layer without passing through L1.
 
@@ -118,10 +124,12 @@ The reference architecture is structured into seven horizontal layers. Each laye
 | IBM Cloud Internet Services (CIS) | WAF, DDoS protection, health-check failover | Health checks against the watsonx Orchestrate endpoint every 30s; failover to secondary region on 3 consecutive failures. |
 | Redis on IBM Cloud Databases | Semantic cache layer | Cache embeddings of recent queries + responses. TTL 1h for factual queries; 5m for time-sensitive/personalised. Use watsonx.ai (Granite) embeddings as the cache key hash. |
 | IBM Cloud IAM | Identity & OIDC token validation | Issue short-lived (15-minute) service tokens for agent-to-agent and tool calls. Never use long-lived API keys for inter-agent communication in production. |
+{: caption="Layer 1 services and configuration" caption-side="bottom"}
 
 > **Anti-pattern: bypassing the gateway.** Exposing watsonx Orchestrate endpoints directly to clients removes rate limiting, token budget enforcement, and the semantic cache. Observed in PoC-to-production migrations; creates uncontrolled cost exposure. Every request path must route through L1.
 
 ### Layer 2 — Orchestration (watsonx Orchestrate)
+{: #layer-2-orchestration}
 
 **Supervisor agent design.** watsonx Orchestrate functions as the supervisor — the top-level reasoner that receives user goals, decomposes them, dispatches sub-agents (via MCP tools and A2A collaborators), collects results, resolves conflicts, and synthesises the final response. The supervisor does not perform domain reasoning directly; it delegates to sub-agents.
 
@@ -144,8 +152,10 @@ The reference architecture is structured into seven horizontal layers. Each laye
 | MCP/A2A call error | HTTP 5xx from server/agent | 2 retries, then dead-letter to IBM Event Streams | Return structured error to supervisor; log to governance |
 | Model inference failure | Non-parseable or empty output | Re-prompt with simplified instruction, 1 retry | Switch to deterministic rule-based fallback agent |
 | Governance block | watsonx.governance threshold violation | No retry — block is intentional | Return refusal response; log violation to OpenPages |
+{: caption="Retry and fallback strategies" caption-side="bottom"}
 
 ### Layer 3 — Interoperability Plane (MCP + A2A)
+{: #layer-3-interoperability-plane}
 
 **What the protocols provide.** Two complementary open standards operate here:
 
@@ -170,6 +180,7 @@ watsonx Orchestrate supports **both**: MCP for importing tools/servers, and A2A 
 > **IBM-specific advantage.** The IBM-authored, Anthropic-verified *"Architecting Secure Enterprise AI Agents with MCP"* guide formalises the ADLC (Plan → Code & Build → Test & Release → Deploy → Operate → Monitor). It gives IBM architects an authoritative reference for secure MCP implementation — gateway patterns, multi-tenancy isolation, approval flows, schema validation, and audit trails.
 
 ### Layer 4 — Sub-Agents
+{: #layer-4-sub-agents}
 
 **Design principles.**
 - Each sub-agent is responsible for exactly one domain or capability. It must not call another sub-agent directly — inter-agent routing goes through the supervisor (L2), using MCP for tools and A2A for agent collaboration.
@@ -187,8 +198,10 @@ watsonx Orchestrate supports **both**: MCP for importing tools/servers, and A2A 
 | Decision agent | Granite 4.x reasoning ("thinking") | OpenPages (risk rules), regulatory tools | Compliance-sensitive; all outputs to governance |
 | Summarisation agent | Granite 4.x small (edge-class) | Document reader, IBM Fusion CAS | High-volume, low-latency; candidate for LinuxONE inference |
 | Notification agent | Tool-only (no LLM) | Email, Slack, ServiceNow connectors | Deterministic; pure tool/skill dispatch |
+{: caption="Recommended sub-agent catalogue" caption-side="bottom"}
 
 ### Layer 5 — Memory Architecture
+{: #layer-5-memory-architecture}
 
 This pattern defines four memory types, each with a distinct backend, scope, lifetime, and access pattern.
 
@@ -198,10 +211,12 @@ This pattern defines four memory types, each with a distinct backend, scope, lif
 | Episodic memory | Per conversation | Session TTL (4h default) | Redis + Db2 (relational) | Conversation history, in-session preferences |
 | Semantic memory | Per user / tenant | Persistent | Db2 (vector column) | Long-term preferences, past interaction patterns |
 | Knowledge base | Per domain | Managed update cycle | Milvus (watsonx.data) | Domain knowledge, policy/product data for RAG |
+{: caption="Memory architecture types" caption-side="bottom"}
 
 > **Memory security requirement.** All stores holding user data must be encrypted at rest using IBM Key Protect with customer-managed root keys (BYOK). Access to the Db2 semantic store must be gated by IBM Cloud IAM with row-level security — sub-agents must not read other tenants' memory. Memory writes must produce an immutable governance record in watsonx.governance.
 
 ### Layer 6 — Observability
+{: #layer-6-observability}
 
 **IBM Instana as the AI tracing backbone.** In a multi-agent architecture, a single user request generates a trace tree spanning the API Connect hop, supervisor reasoning spans, each MCP tool call and A2A collaboration with attribution, each LLM inference (token count + latency), each memory read/write, and final synthesis. Instana correlates these under a single trace ID derived from the governance correlation ID generated at L1.
 
@@ -216,8 +231,10 @@ This pattern defines four memory types, each with a distinct backend, scope, lif
 | Semantic cache hit rate | > 30% | < 15% sustained | L1 — Redis |
 | Token cost per request (by tenant) | < defined budget | > 120% of budget | L1 — API Connect |
 | Governance audit record creation rate | 100% of requests | < 99.9% | L7 — Governance |
+{: caption="Key observability metrics and SLOs" caption-side="bottom"}
 
 ### Layer 7 — Governance
+{: #layer-7-governance}
 
 **Agent behaviour auditing and evaluation.** watsonx.governance agentic capabilities (introduced 2025, expanded through 2026) trace agent decision chains, not just model outputs. Every invocation produces a governance record: originating request context; which sub-agents were invoked and in what sequence; which tools/agents were called and with what parameters; which data sources (and jurisdictions) were accessed; the final output with confidence metadata; and whether any governance policy was triggered. Agentic evaluation metrics include context relevance, faithfulness, answer similarity, and tool-selection quality.
 
@@ -230,10 +247,12 @@ This pattern defines four memory types, each with a distinct backend, scope, lif
 | 3 | Real-time output monitoring | Sub-agent outputs are sampled (10% default, 100% for high-risk task types) and checked for hallucination indicators, PII leakage, and toxicity. | watsonx.governance + IBM OpenPages |
 | 4 | Post-interaction drift detection | watsonx.governance compares the sub-agent's output distribution against its baseline; drift beyond threshold triggers alert and optional shadow-testing. | watsonx.governance drift monitor + IBM Instana |
 | 5 | Regulatory evidence collection | The complete record for regulated interaction types is exported to IBM OpenPages in a structured format aligned with GDPR Article 22, EU AI Act, and FDA 21 CFR Part 11 audit requirements. | IBM OpenPages + watsonx.governance |
+{: caption="Five governance checkpoints" caption-side="bottom"}
 
----
+
 
 ## Architecture Decision Records
+{: #architecture-decision-records}
 
 Each decision was made after evaluating competing approaches against the IBM Cloud service landscape, target use cases, and governance requirements. Deviations are permitted but must be documented with equivalent rationale.
 
@@ -248,12 +267,15 @@ Each decision was made after evaluating competing approaches against the IBM Clo
 | **MCP/A2A server runtime** | AWS Lambda, Cloud Functions, bare VMs | **Red Hat OpenShift (IBM Cloud)** | Portability to hybrid environments, native mTLS via OpenShift Service Mesh, consistent deployment model with the watsonx platform. |
 | **Observability backend** | Datadog, Prometheus + Grafana, CloudWatch | **IBM Instana + OpenTelemetry** | IBM-owned, integrates with watsonx inference endpoints, and emits AI-semantic trace attributes (token counts, model version, agent ID). OpenTelemetry keeps it vendor-portable. |
 | **Governance audit store** | Elasticsearch, custom DB, S3-compatible | **watsonx.governance + IBM OpenPages** | Provides regulatory-grade evidence collection (GDPR, EU AI Act, FDA) alongside agentic evaluation. Competitors now provide agent observability, but IBM's regulatory-evidence depth via OpenPages remains differentiated. |
+{: caption="Architecture decision records" caption-side="bottom"}
 
----
+
 
 ## Deployment Guide
+{: #deployment-guide}
 
 ### Terraform Module Structure
+{: #terraform-module-structure}
 
 | Module | Layers | Resources provisioned |
 |---|---|---|
@@ -264,8 +286,10 @@ Each decision was made after evaluating competing approaches against the IBM Clo
 | `ibm-agent-memory` | L5 | Db2 schema (conversations, semantic memory), Milvus collection in watsonx.data, Redis configuration |
 | `ibm-agent-observability` | L6 | Instana configuration, OpenTelemetry collector, alert policies, dashboards |
 | `ibm-agent-governance` | L7 | watsonx.governance registrations, policy rules, OpenPages integration, Sovereign Core policies |
+{: caption="Terraform module structure" caption-side="bottom"}
 
 ### Provisioning order
+{: #provisioning-order}
 
 1. `ibm-agent-governance` — IAM policies and governance foundation first
 2. `ibm-ai-gateway` — networking and authentication infrastructure
@@ -276,6 +300,7 @@ Each decision was made after evaluating competing approaches against the IBM Clo
 7. `ibm-agent-observability` — instrumentation last; services must exist to be instrumented
 
 ### Environment Configuration
+{: #environment-configuration}
 
 | Parameter | Development | Staging | Production |
 |---|---|---|---|
@@ -286,10 +311,12 @@ Each decision was made after evaluating competing approaches against the IBM Clo
 | Instana tier | Trial | SaaS Professional | SaaS Enterprise |
 | Governance enforcement | Advisory (log only) | Enforcing (block + log) | Enforcing (block + log + OpenPages) |
 | Sovereign Core enabled | No | No | Yes (regulated deployments; subject to GA availability) |
+{: caption="Environment configuration by stage" caption-side="bottom"}
 
----
+
 
 ## Anti-Pattern Library
+{: #anti-pattern-library}
 
 | Anti-pattern | Consequence | Mitigation |
 |---|---|---|
@@ -299,32 +326,13 @@ Each decision was made after evaluating competing approaches against the IBM Clo
 | Governance as an afterthought | Adding governance post-deployment leaves audit-trail gaps; regulatory exams require continuous evidence. | Provision `ibm-agent-governance` first. No sub-agent deploys without its model registered. Governance is an infrastructure requirement, not a feature. |
 | Shared MCP server across domains | Cross-domain data-leakage risk; access scope impossible to audit cleanly. | One MCP server per knowledge domain, each with its own service identity, IAM scope, and governance policy. Isolation at the server boundary. |
 | Cost blindness — no token budgeting | An unconstrained system with 6 sub-agents at 3 retries each can consume ~18× the expected token budget per interaction. | Token budgets at L1 (API Connect); per-agent token tracking in Instana; alert at >120% of budget; semantic caching to cut redundant inference. |
+{: caption="Anti-pattern library" caption-side="bottom"}
 
----
 
-## Competitive Comparison
 
-The major hyperscalers reached enterprise GA for managed agent platforms between October 2025 and Q1 2026, and all now support the open MCP and A2A protocols. The table reflects that reality rather than the earlier (and now inaccurate) claim that agent auditing was unique to IBM.
-
-| Capability | This IBM pattern | AWS Bedrock AgentCore | Azure AI Foundry Agent Service | Google Vertex AI Agent Engine |
-|---|---|---|---|---|
-| Supervisor / sub-agent pattern | watsonx Orchestrate + MCP + A2A | AgentCore Runtime (any framework) | Foundry Agent Service (multi-agent) | Agent Engine + ADK |
-| Agent-to-tool protocol | MCP (open) | MCP (open) | MCP (open) | MCP (open; Apigee can expose APIs as MCP) |
-| Agent-to-agent protocol | A2A (open) | A2A (open) | A2A (open; Microsoft Agent Framework) | A2A (open; originated by Google) |
-| IaC deployability | Terraform (7 modules) | CloudFormation / CDK / Terraform | Bicep / Terraform | Terraform / Deployment Manager |
-| Agent observability & tracing | IBM Instana (full trace) | AgentCore Observability | Foundry observability / App Insights | Agent Engine tracing |
-| Agentic evaluation | watsonx.governance | AgentCore evaluation service | Foundry evaluations | Vertex evaluations |
-| Regulatory evidence depth | **OpenPages + watsonx.governance (Risk Atlas, EU AI Act/ISO 42001/NIST accelerators)** | Guardrails + CloudWatch (lighter) | Purview / Responsible AI (separate) | Audit trail + IAM (lighter) |
-| Hybrid / on-prem deployment | **Red Hat OpenShift (any cloud/on-prem)** | Cloud-only | Cloud-only (Arc for limited scenarios) | Cloud-only (Distributed Cloud limited) |
-| Sovereignty story | **IBM Sovereign Core (runtime enforcement)** | GovCloud | Azure Government + confidential computing | Sovereign Controls / partner regions |
-| Persistent agent memory | Db2 + Milvus (4 memory types) | AgentCore Memory (short + long-term) | Cosmos DB + AI Search | Memory Bank / Vertex |
-| Observability product ownership | IBM Instana (IBM-owned) | CloudWatch (AWS-owned) | App Insights (Microsoft-owned) | Cloud Trace/Ops (Google-owned) |
-
-> **IBM's defensible advantage — restated honestly.** Orchestration, observability, agentic evaluation, and open-protocol support are now broadly at parity across the four platforms. IBM leads on a narrower but high-value set: **regulatory-grade governance evidence** (watsonx.governance + OpenPages, with EU AI Act/ISO 42001/NIST accelerators), **sovereignty enforced at runtime** (Sovereign Core), and the **deepest hybrid/on-prem story** (Red Hat OpenShift, any cloud or on-prem). These map precisely to regulated-industry requirements — financial services, healthcare, government — IBM's primary watsonx target segments. Position and market this pattern on those three capabilities, not on orchestration or auditing parity.
-
----
 
 ## Implementation Roadmap
+{: #implementation-roadmap}
 
 | Phase | Duration | Outcome | Success criterion |
 |---|---|---|---|
@@ -334,10 +342,12 @@ The major hyperscalers reached enterprise GA for managed agent platforms between
 | 4 | Weeks 11–13 | Orchestration: deploy `ibm-orchestrate-core`. Integrate supervisor with sub-agents. Run end-to-end scenarios; tune decomposition prompt. | Complete request-lifecycle traces in Instana; supervisor decomposes 90% of test scenarios correctly. |
 | 5 | Weeks 14–16 | Observability + hardening: deploy `ibm-agent-observability`. Establish baselines; configure alerts; load-test the full system. | All 7 SLO metrics instrumented; alert policies fire in simulated failures. |
 | 6 | Week 17+ | Production: enable IBM Sovereign Core (regulated deployments, subject to GA). Activate OpenPages integration. Conduct governance readiness review. | First production interaction generates a complete OpenPages evidence record; governance review signed off. |
+{: caption="Implementation roadmap phases" caption-side="bottom"}
 
----
+
 
 ## Summary and Key Takeaways
+{: #summary-and-key-takeaways}
 
 This reference architecture defines a production-grade, seven-layer multi-agent orchestration pattern for IBM Cloud, comparable in depth to AWS Bedrock AgentCore and Azure AI Foundry Agent Service patterns, and differentiated on the dimensions that matter most to regulated-industry customers.
 
@@ -348,7 +358,3 @@ This reference architecture defines a production-grade, seven-layer multi-agent 
 - **Deploy governance first, agents second.** The roadmap provisions watsonx.governance before any sub-agent, creating an unbroken audit trail from day one. Retrofitting governance after go-live creates evidence gaps that cannot be filled retroactively.
 
 > **Next patterns in the IBM AI Well-Architected series.** #1 IBM Sovereign AI Deployment (Sovereign Core + LinuxONE) · #2 Hybrid RAG Reference Architecture (watsonx.ai + watsonx.data + Milvus) · #3 Responsible AI as Deployable Architecture (watsonx.governance + OpenPages) · #5 LLMOps Pipeline (watsonx.ai + OpenShift AI + Tekton) · #6 AI Observability with Instana
-
----
-
-*IBM Cloud · 2026 · Architecture · This document was reviewed and updated in June 2026 for protocol accuracy (MCP/A2A), current Granite 4.x models, IBM Cloud Logs, IBM Sovereign Core status, and the 2026 competitive landscape.*
