@@ -21,8 +21,10 @@ Multi-Agent Orchestration Reference Architecture Pattern
 {: #pattern-overview}
 
 This reference architecture defines the design, deployment, and operational patterns for building production-grade multi-agent systems on IBM Cloud using watsonx Orchestrate as the orchestration plane, MCP for tool and data integration, and A2A for agent-to-agent collaboration. It covers supervisor/sub-agent hierarchies, persistent agent memory, MCP/A2A topology, governance wiring, and observability.
+
 ## Pattern components
 {: #pattern-components}
+
 | Element | Selection |
 |---|---|
 | Orchestration engine | watsonx Orchestrate) |
