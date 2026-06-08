@@ -11,6 +11,8 @@ subcollection: pattern-multiagent-orchestration-architecture
 ---
 
 {{site.data.keyword.attribute-definition-list}}
+Multi-Agent Orchestration Reference Architecture Pattern 
+
 
 
 # White paper title
