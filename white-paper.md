@@ -58,17 +58,6 @@ Single-model inference patterns — including RAG — are insufficient for enter
 
 Multi-agent systems address this by decomposing complex goals into sub-tasks, routing each to a specialised agent, coordinating the results, and maintaining shared context — all governed by an orchestration plane that handles failure, retry, and escalation.
 
-### IBM's Strategic Position
-{: #ibms-strategic-position}
-
-At IBM Think 2025 and 2026, IBM positioned agentic AI as a primary enterprise value-delivery mechanism for watsonx. Developments that make this architecture timely:
-
-- **watsonx Orchestrate GA:** production orchestration with a large enterprise connector and prebuilt-agent catalogue, built-in observability, and — as of 2026 — an *agentic control plane* for running, managing, and governing agents built across frameworks (IBM native, LangGraph, Langflow, and external A2A agents).
-- **Open protocol support:** watsonx Orchestrate supports **MCP** for tool/data integration and **A2A** (v0.3.0) for integrating external/third-party agents as collaborators.
-- **watsonx.governance agentic governance:** agentic evaluation and monitoring capabilities were introduced in 2025 (tech preview, March 2025) and expanded through 2026 — governing agent behaviour, not just model drift.
-- **Granite 4.x models:** the current IBM Granite family (Granite 4.0 GA in 2025; Granite 4.1 in April 2026) offers 3B/8B/30B language models plus vision, speech, embedding, and Guardian variants, with reasoning/"thinking" capability suitable for multi-step planning in sub-agents.
-- **IBM Sovereign Core:** announced January 2026; tech preview February 2026; **GA planned for mid-2026**. Embeds governance and compliance controls into infrastructure and enforces sovereignty *at runtime*, enabling regulated-industry agent deployments.
-
 
 ## Architecture Overview
 {: #architecture-overview}
