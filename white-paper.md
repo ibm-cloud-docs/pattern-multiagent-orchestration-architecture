@@ -66,7 +66,7 @@ Multi-agent systems address this by decomposing complex goals into sub-tasks, ro
 {: #seven-layer-model}
 
 The below diagram shows the pattern architecture for multi-agent orchestration.
-![Seven-layer model](multiagent_orchestration_architecture.svg)
+![Seven-layer model](multiagent_orchestration_architecture.png)
 {: caption}
 
 The reference architecture is structured into seven horizontal layers. Each layer has defined responsibilities, IBM Cloud service assignments, failure modes, and integration contracts with adjacent layers. The layered model ensures separation of concerns — governance does not bleed into routing; memory does not couple to inference.
