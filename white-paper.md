@@ -20,18 +20,18 @@ Multi-Agent Orchestration Reference Architecture Pattern
 ## Pattern overview
 {: #pattern-overview}
 
+This reference architecture defines the design, deployment, and operational patterns for building production-grade multi-agent systems on IBM Cloud using watsonx Orchestrate as the orchestration plane, MCP for tool and data integration, and A2A for agent-to-agent collaboration. It covers supervisor/sub-agent hierarchies, persistent agent memory, MCP/A2A topology, governance wiring, and observability.
+## Pattern components
+{: #pattern-components}
 | Element | Selection |
 |---|---|
-| Orchestration engine | **watsonx Orchestrate** (GA) |
-| Agent-to-tool protocol | **Model Context Protocol (MCP)** — created and open-sourced by Anthropic |
-| Agent-to-agent protocol | **Agent-to-Agent (A2A)** — originated by Google, governed by the Linux Foundation |
-| Governance layer | **watsonx.governance** (model + agentic governance) |
-| Observability | **IBM Instana + OpenTelemetry** |
+| Orchestration engine | watsonx Orchestrate) |
+| Agent-to-tool protocol | Model Context Protocol (MCP) |
+| Agent-to-agent protocol | Agent-to-Agent (A2A) — originated by Google, governed by the Linux Foundation |
+| Governance layer | watsonx.governance (model + agentic governance) |
+| Observability | IBM Instana + OpenTelemetry |
 {: caption="Pattern overview components" caption-side="bottom"}
 
-**Scope.** This reference architecture defines the design, deployment, and operational patterns for building production-grade multi-agent systems on IBM Cloud using watsonx Orchestrate as the orchestration plane, MCP for tool and data integration, and A2A for agent-to-agent collaboration. It covers supervisor/sub-agent hierarchies, persistent agent memory, MCP/A2A topology, governance wiring, and observability — producing a Terraform-deployable architecture comparable in depth to Azure AI Foundry Agent Service and AWS Bedrock AgentCore patterns.
-
-*Key figures:* extensive prebuilt watsonx Orchestrate connector and agent catalogue · 7 architecture layers · 9 ADRs · 5 governance checkpoints.
 
 
 
@@ -42,7 +42,7 @@ Enterprise AI has crossed the threshold from single-model inference to coordinat
 
 IBM's differentiator in this space is **not** orchestration capability alone, and — importantly — it is no longer that agent auditing exists *only* on IBM. All three major hyperscalers now provide agent observability and tracing. IBM's defensible advantage is the **depth and regulatory grade of its governance**: watsonx.governance factsheets, agentic evaluation metrics, the Governance Graph, and the Risk Atlas, wired into IBM OpenPages for regulator-ready evidence, plus a sovereignty story (IBM Sovereign Core) and a genuinely hybrid/on-prem deployment model (Red Hat OpenShift). This pattern makes those differentiators architecturally concrete.
 
-> **Architecture Decision.** This pattern uses watsonx Orchestrate as the multi-agent control plane over custom-built orchestration because it is production-ready, provides an extensive enterprise connector catalogue, supports open MCP and A2A protocols, and integrates natively with watsonx.governance for agent audit and evaluation. Custom frameworks (LangGraph, AutoGen, CrewAI) remain valid for specific sub-agent implementations and can be registered as A2A collaborators or exposed via MCP — not as replacement orchestrators.
+- Architecture Decision: This pattern uses watsonx Orchestrate as the multi-agent control plane over custom-built orchestration because it is production-ready, provides an extensive enterprise connector catalogue, supports open MCP and A2A protocols, and integrates natively with watsonx.governance for agent audit and evaluation. Custom frameworks (LangGraph, AutoGen, CrewAI) remain valid for specific sub-agent implementations and can be registered as A2A collaborators or exposed via MCP — not as replacement orchestrators.
 
 
 
@@ -63,14 +63,10 @@ At IBM Think 2025 and 2026, IBM positioned agentic AI as a primary enterprise va
 
 - **watsonx Orchestrate GA:** production orchestration with a large enterprise connector and prebuilt-agent catalogue, built-in observability, and — as of 2026 — an *agentic control plane* for running, managing, and governing agents built across frameworks (IBM native, LangGraph, Langflow, and external A2A agents).
 - **Open protocol support:** watsonx Orchestrate supports **MCP** for tool/data integration and **A2A** (v0.3.0) for integrating external/third-party agents as collaborators.
-- **IBM + Anthropic partnership:** IBM *authored* the guide *"Architecting Secure Enterprise AI Agents with MCP"* (October 2025), which Anthropic *verified*. It formalises the **Agent Development Lifecycle (ADLC)** — six phases: Plan, Code & Build, Test & Release, Deploy, Operate, Monitor. The partnership also infuses Anthropic's Claude into IBM software (e.g., IBM's AI-first IDE).
 - **watsonx.governance agentic governance:** agentic evaluation and monitoring capabilities were introduced in 2025 (tech preview, March 2025) and expanded through 2026 — governing agent behaviour, not just model drift.
 - **Granite 4.x models:** the current IBM Granite family (Granite 4.0 GA in 2025; Granite 4.1 in April 2026) offers 3B/8B/30B language models plus vision, speech, embedding, and Guardian variants, with reasoning/"thinking" capability suitable for multi-step planning in sub-agents.
 - **IBM Sovereign Core:** announced January 2026; tech preview February 2026; **GA planned for mid-2026**. Embeds governance and compliance controls into infrastructure and enforces sovereignty *at runtime*, enabling regulated-industry agent deployments.
 
-> **The governance differentiation — stated accurately.** AWS Bedrock AgentCore and Azure AI Foundry Agent Service now provide agent observability, tracing, memory, and policy controls, and Google Vertex AI Agent Engine provides agent identities with audit trails. IBM's advantage is therefore **not** that auditing is unique to IBM. It is the *regulatory-grade depth*: watsonx.governance (factsheets, agentic evaluation, Governance Graph, Risk Atlas) combined with IBM OpenPages for regulator-ready evidence, mapped to frameworks such as the EU AI Act, ISO 42001, and NIST AI RMF — plus sovereignty (Sovereign Core) and hybrid/on-prem deployment (OpenShift). This pattern makes that layer deployable.
-
----
 
 ## Architecture Overview
 {: #architecture-overview}
@@ -120,7 +116,7 @@ The reference architecture is structured into seven horizontal layers. Each laye
 | IBM Cloud IAM | Identity & OIDC token validation | Issue short-lived (15-minute) service tokens for agent-to-agent and tool calls. Never use long-lived API keys for inter-agent communication in production. |
 {: caption="Layer 1 services and configuration" caption-side="bottom"}
 
-> **Anti-pattern: bypassing the gateway.** Exposing watsonx Orchestrate endpoints directly to clients removes rate limiting, token budget enforcement, and the semantic cache. Observed in PoC-to-production migrations; creates uncontrolled cost exposure. Every request path must route through L1.
+- Anti-pattern: bypassing the gateway: Exposing watsonx Orchestrate endpoints directly to clients removes rate limiting, token budget enforcement, and the semantic cache. Observed in PoC-to-production migrations; creates uncontrolled cost exposure. Every request path must route through L1.
 
 ### Layer 2 — Orchestration (watsonx Orchestrate)
 {: #layer-2-orchestration}
@@ -129,7 +125,7 @@ The reference architecture is structured into seven horizontal layers. Each laye
 
 **Goal decomposition.** The supervisor uses a structured decomposition prompt that produces a JSON DAG of sub-tasks. Each node specifies the target sub-agent, the input context slice, the expected output schema (JSON Schema), upstream dependencies, and fallback behaviour on failure.
 
-> **Design principle: thin supervisor.** The supervisor should contain minimal domain logic — decomposition strategy, routing rules, conflict resolution, and escalation conditions only. Domain knowledge lives exclusively in sub-agents. A supervisor with domain logic becomes a bottleneck, a failure point, and a governance liability: it is harder to audit one complex agent than five simple specialised ones.
+- Design principle: thin supervisor: The supervisor should contain minimal domain logic — decomposition strategy, routing rules, conflict resolution, and escalation conditions only. Domain knowledge lives exclusively in sub-agents. A supervisor with domain logic becomes a bottleneck, a failure point, and a governance liability: it is harder to audit one complex agent than five simple specialised ones.
 
 **Conversation state management.**
 - Store conversation history in IBM Cloud Db2 (relational) with a vector column for semantic similarity lookups.
@@ -153,7 +149,7 @@ The reference architecture is structured into seven horizontal layers. Each laye
 
 **What the protocols provide.** Two complementary open standards operate here:
 
-- **MCP (Model Context Protocol)** — created and open-sourced by Anthropic (November 2024). Standardises how agents connect to **tools and data sources**: a tool schema (JSON Schema), a structured request/response protocol, a server registry for discovery, and OAuth2/mTLS authentication at tool boundaries.
+- **MCP (Model Context Protocol)** — Standardises how agents connect to **tools and data sources**: a tool schema (JSON Schema), a structured request/response protocol, a server registry for discovery, and OAuth2/mTLS authentication at tool boundaries.
 - **A2A (Agent-to-Agent)** — originated by Google (April 2025), donated to the **Linux Foundation** (June 2025), with 150+ supporting organisations by 2026. Standardises **agent-to-agent** communication: capability discovery via *Agent Cards*, a task lifecycle (submitted → working → input-required → completed/failed/canceled), over HTTP + Server-Sent Events + JSON-RPC 2.0.
 
 watsonx Orchestrate supports **both**: MCP for importing tools/servers, and A2A (v0.3.0) for integrating external agents as collaborators. (IBM also contributed the earlier Agent Communication Protocol, ACP, in 2025; the ecosystem has since converged on A2A for agent-to-agent interoperability.)
@@ -171,7 +167,6 @@ watsonx Orchestrate supports **both**: MCP for importing tools/servers, and A2A 
 - Scoped permissions — each sub-agent's service identity is granted only the tool scopes / agent collaborations it requires. No wildcard permissions.
 - All calls logged with caller identity, target server/agent, tool/skill name, input hash (not raw input — PII protection), output hash, latency, and governance correlation ID.
 
-> **IBM-specific advantage.** The IBM-authored, Anthropic-verified *"Architecting Secure Enterprise AI Agents with MCP"* guide formalises the ADLC (Plan → Code & Build → Test & Release → Deploy → Operate → Monitor). It gives IBM architects an authoritative reference for secure MCP implementation — gateway patterns, multi-tenancy isolation, approval flows, schema validation, and audit trails.
 
 ### Layer 4 — Sub-Agents
 {: #layer-4-sub-agents}
@@ -253,7 +248,7 @@ Each decision was made after evaluating competing approaches against the IBM Clo
 | Decision | Alternatives considered | Chosen | Rationale |
 |---|---|---|---|
 | **Orchestration engine** | LangGraph, AutoGen, CrewAI, custom-built on OpenShift | **watsonx Orchestrate** | GA product with an extensive connector catalogue, native watsonx.governance integration, IBM support SLAs, open MCP + A2A support, and an agentic control plane. LangGraph/CrewAI remain valid for sub-agent internals, registered as A2A collaborators — not as the supervisor. |
-| **Agent-to-tool protocol** | REST/HTTP, gRPC, LangChain tool format | **MCP** | Open standard (Anthropic) for tool/data access: standardised schema, structured auth, server discovery. Supported natively by watsonx Orchestrate. |
+| **Agent-to-tool protocol** | REST/HTTP, gRPC, LangChain tool format | **MCP** | Open standard for tool/data access: standardised schema, structured auth, server discovery. Supported natively by watsonx Orchestrate. |
 | **Agent-to-agent protocol** | Custom message bus, proprietary RPC | **A2A** | Open standard (Google → Linux Foundation) for agent collaboration and discovery via Agent Cards. Lets agents built by different teams/vendors interoperate without custom adapters. Supported by watsonx Orchestrate (v0.3.0). |
 | **Supervisor model** | Third-party GPT-class, Llama 4, Granite 4.x Instruct | **Granite 4.x reasoning ("thinking") variant** | Multi-step decomposition needs reasoning. Granite reasoning variants provide this without the cost/sovereignty concerns of third-party models. Falls back to Granite 4.x Instruct (8B class). |
 | **Conversation state store** | Redis only, PostgreSQL, Cloudant | **Db2 (relational + vector)** | Row-level security for tenant isolation, vector column for semantic retrieval, governance-tooling integration. Redis retained as ephemeral working memory only. |
