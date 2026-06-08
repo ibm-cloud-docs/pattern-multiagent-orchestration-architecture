@@ -17,11 +17,6 @@ toc:
       job-description: I am an architect for IBM Cloud.
       image: images/sam-p-user.jpg
       url: https://www.linkedin.com/in/dwarakanath/
-    - name: Ann O. User
-      title: Director, IBM Cloud Software
-      job-description: I am a director for IBM Cloud.
-      image: images/ann-o-user.jpg
-      url: https://linkedin.com/in/ann-o-user
   entries:
   - navgroup:
       id: overview
