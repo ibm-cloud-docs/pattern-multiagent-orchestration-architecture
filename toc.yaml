@@ -12,11 +12,11 @@ toc:
     label: White paper title
     description: 128 characters or less. The description should expand upon the name, but don't add extra marketese words that inflate the length. Focus on keywords that users would be skimming and/or searching for, including any key IBM branded terms covered in the white paper.
     authors:
-    - name: Sam P. User
-      title: Architect, IBM Cloud Services
+    - name: Dwarkanath P Rao
+      title: STSM IBM Cloud
       job-description: I am an architect for IBM Cloud.
       image: images/sam-p-user.jpg
-      url: https://linkedin.com/in/sam-p-user
+      url: https://www.linkedin.com/in/dwarakanath/
     - name: Ann O. User
       title: Director, IBM Cloud Software
       job-description: I am a director for IBM Cloud.
