@@ -76,7 +76,11 @@ At IBM Think 2025 and 2026, IBM positioned agentic AI as a primary enterprise va
 ### Seven-Layer Model
 {: #seven-layer-model}
 
+The below diagram shows the pattern architecture for multi-agent orchestration.
+![Seven-layer model](multiagent_orchestration_architecture.svg)
+
 The reference architecture is structured into seven horizontal layers. Each layer has defined responsibilities, IBM Cloud service assignments, failure modes, and integration contracts with adjacent layers. The layered model ensures separation of concerns — governance does not bleed into routing; memory does not couple to inference.
+
 
 | Layer | Components and responsibilities |
 |---|---|
