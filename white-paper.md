@@ -4,7 +4,7 @@ copyright:
   years: 2026
 lastupdated: "2026-06-09"
 
-keywords:
+keywords: multi-agent systems, watsonx orchestrate, agent orchestration, mcp, a2a, watsonx governance, agentic ai, enterprise ai, reference architecture
 
 subcollection: pattern-multiagent-orchestration-architecture
 
