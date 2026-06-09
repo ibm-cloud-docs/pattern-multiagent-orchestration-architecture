@@ -9,14 +9,13 @@ keywords:
 subcollection: pattern-multiagent-orchestration-architecture
 
 ---
-# Multi-Agent Orchestration Architecture Pattern
+
 {{site.data.keyword.attribute-definition-list}}
 
-## Multi-Agent Orchestration Pattern
-
+# Multi-Agent Orchestration Reference Architecture
 {: #multi-agent-orchestration-reference-architecture}
 
-This pattern provides a blueprint for building enterprise-grade multi-agent systems on IBM Cloud, leveraging watsonx Orchestrate for orchestration, open protocols (MCP and A2A) for interoperability, and watsonx.governance for regulatory-grade audit trails. The pattern addresses the complete lifecycle from API gateway through governance, defining seven architectural layers with clear separation of concerns, IBM Cloud service mappings, and anti-patterns to avoid. It is designed for regulated industries requiring sovereignty controls, hybrid deployment flexibility, and continuous compliance evidence collection.
+This reference architecture provides a production-ready blueprint for building enterprise-grade multi-agent systems on IBM Cloud, leveraging watsonx Orchestrate for orchestration, open protocols (MCP and A2A) for interoperability, and watsonx.governance for regulatory-grade audit trails. The pattern addresses the complete lifecycle from API gateway through governance, defining seven architectural layers with clear separation of concerns, IBM Cloud service mappings, and anti-patterns to avoid. It is designed for regulated industries requiring sovereignty controls, hybrid deployment flexibility, and continuous compliance evidence collection.
 
 
 ## Pattern overview
@@ -69,7 +68,7 @@ Multi-agent systems address this by decomposing complex goals into sub-tasks, ro
 
 The below diagram shows the pattern architecture for multi-agent orchestration.
 ![Seven-layer model](multiagent_orchestration_architecture.png)
-{: caption}
+{: caption="Seven-layer multi-agent orchestration architecture" caption-side="bottom"}
 
 The reference architecture is structured into seven horizontal layers. Each layer has defined responsibilities, IBM Cloud service assignments, failure modes, and integration contracts with adjacent layers. The layered model ensures separation of concerns — governance does not bleed into routing; memory does not couple to inference.
 
