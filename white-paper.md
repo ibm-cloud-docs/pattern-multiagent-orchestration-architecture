@@ -9,10 +9,10 @@ keywords:
 subcollection: pattern-multiagent-orchestration-architecture
 
 ---
-# Multi-Agent Orchestration Reference Architecture
+# Multi-Agent Orchestration Architecture Pattern
 {{site.data.keyword.attribute-definition-list}}
 
-# Multi-Agent Orchestration Reference Architecture
+## Multi-Agent Orchestration Pattern
 
 {: #multi-agent-orchestration-reference-architecture}
 
