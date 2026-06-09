@@ -9,8 +9,8 @@ toc:
     navigation: hidden
     href: /docs/pattern-multiagent-orchestration-architecture
     path: pattern-multiagent-orchestration-architecture
-    label: White paper title
-    description: 128 characters or less. The description should expand upon the name, but don't add extra marketese words that inflate the length. Focus on keywords that users would be skimming and/or searching for, including any key IBM branded terms covered in the white paper.
+    label: Multi-Agent Orchestration Reference Architecture Pattern
+    description: Production-grade multi-agent systems on IBM Cloud using watsonx Orchestrate, MCP, A2A protocols, with governance and observability.
     authors:
     - name: Dwarkanath P Rao
       title: STSM IBM Cloud
