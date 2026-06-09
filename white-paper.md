@@ -2,7 +2,7 @@
 
 copyright:
   years: 2026
-lastupdated: "2026-06-08"
+lastupdated: "2026-06-09"
 
 keywords:
 
@@ -11,10 +11,11 @@ subcollection: pattern-multiagent-orchestration-architecture
 ---
 
 {{site.data.keyword.attribute-definition-list}}
-Multi-Agent Orchestration Reference Architecture Pattern 
 
 # Multi-Agent Orchestration Reference Architecture
 {: #multi-agent-orchestration-reference-architecture}
+
+This pattern provides a blueprint for building enterprise-grade multi-agent systems on IBM Cloud, leveraging watsonx Orchestrate for orchestration, open protocols (MCP and A2A) for interoperability, and watsonx.governance for regulatory-grade audit trails. The pattern addresses the complete lifecycle from API gateway through governance, defining seven architectural layers with clear separation of concerns, IBM Cloud service mappings, and anti-patterns to avoid. It is designed for regulated industries requiring sovereignty controls, hybrid deployment flexibility, and continuous compliance evidence collection.
 
 
 ## Pattern overview
