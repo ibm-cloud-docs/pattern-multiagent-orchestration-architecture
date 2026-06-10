@@ -2,7 +2,7 @@
 
 copyright:
   years: 2026
-lastupdated: "2026-06-09"
+lastupdated: "2026-06-10"
 
 keywords: multi-agent systems, watsonx orchestrate, agent orchestration, mcp, a2a, watsonx governance, agentic ai, enterprise ai, reference architecture
 
@@ -45,7 +45,7 @@ Enterprise AI has crossed the threshold from single-model inference to coordinat
 
 IBM's differentiator in this space is **not** orchestration capability alone, and — importantly — it is no longer that agent auditing exists *only* on IBM. All three major hyperscalers now provide agent observability and tracing. IBM's defensible advantage is the **depth and regulatory grade of its governance**: watsonx.governance factsheets, agentic evaluation metrics, the Governance Graph, and the Risk Atlas, wired into IBM OpenPages for regulator-ready evidence, plus a sovereignty story (IBM Sovereign Core) and a genuinely hybrid/on-prem deployment model (Red Hat OpenShift). This pattern makes those differentiators architecturally concrete.
 
-- Architecture Decision: This pattern uses watsonx Orchestrate as the multi-agent control plane over custom-built orchestration because it is production-ready, provides an extensive enterprise connector catalogue, supports open MCP and A2A protocols, and integrates natively with watsonx.governance for agent audit and evaluation. Custom frameworks (LangGraph, AutoGen, CrewAI) remain valid for specific sub-agent implementations and can be registered as A2A collaborators or exposed via MCP — not as replacement orchestrators.
+- Architecture Decision: This pattern uses watsonx Orchestrate as the multi-agent control plane over custom-built orchestration because it is production-ready, provides an extensive enterprise connector catalogue, watsonx Orchestrate supports MCP for tool integration and provides a built‑in collaborator‑agent framework that can be extended to interoperate with external agents via custom adapters and integrates natively with watsonx.governance for agent audit and evaluation. Custom frameworks (LangGraph, AutoGen, CrewAI) remain valid for specific sub-agent implementations and can be registered as A2A collaborators or exposed via MCP — not as replacement orchestrators.
 
 
 
@@ -147,9 +147,9 @@ The reference architecture is structured into seven horizontal layers. Each laye
 **What the protocols provide.** Two complementary open standards operate here:
 
 - **MCP (Model Context Protocol)** — Standardises how agents connect to **tools and data sources**: a tool schema (JSON Schema), a structured request/response protocol, a server registry for discovery, and OAuth2/mTLS authentication at tool boundaries.
-- **A2A (Agent-to-Agent)** — originated by Google (April 2025), donated to the **Linux Foundation** (June 2025), with 150+ supporting organisations by 2026. Standardises **agent-to-agent** communication: capability discovery via *Agent Cards*, a task lifecycle (submitted → working → input-required → completed/failed/canceled), over HTTP + Server-Sent Events + JSON-RPC 2.0.
+- **A2A (Agent-to-Agent)** — originated by Google, donated to the **Linux Foundation** (June 2025), with 150+ supporting organisations by 2026. Standardises **agent-to-agent** communication: capability discovery via *Agent Cards*, a task lifecycle (submitted → working → input-required → completed/failed/canceled), over HTTP + Server-Sent Events + JSON-RPC 2.0.
 
-watsonx Orchestrate supports **both**: MCP for importing tools/servers, and A2A (v0.3.0) for integrating external agents as collaborators. (IBM also contributed the earlier Agent Communication Protocol, ACP, in 2025; the ecosystem has since converged on A2A for agent-to-agent interoperability.)
+watsonx Orchestrate supports **both**: MCP for importing tools/servers, and A2A  for integrating external agents as collaborators. (IBM also contributed the earlier Agent Communication Protocol, ACP, in 2025; the ecosystem has since converged on A2A for agent-to-agent interoperability.)
 
 **Server/agent topology.** Three categories of MCP server, plus A2A collaborators, deployed and scaled independently on Red Hat OpenShift:
 
