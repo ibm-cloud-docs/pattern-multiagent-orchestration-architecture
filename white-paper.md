@@ -2,7 +2,7 @@
 
 copyright:
   years: 2026
-lastupdated: "2026-06-10"
+lastupdated: "2026-06-16"
 
 keywords: multi-agent systems, watsonx orchestrate, agent orchestration, mcp, a2a, watsonx governance, agentic ai, enterprise ai, reference architecture
 
@@ -342,5 +342,3 @@ This reference architecture defines a production-grade, seven-layer multi-agent 
 - **MCP and A2A are complementary open standards.** MCP connects agents to tools and data; A2A connects agents to each other. This pattern uses both, and watsonx Orchestrate supports both — avoiding the lock-in of proprietary inter-agent protocols.
 - **The anti-pattern library is as important as the pattern.** The six anti-patterns are the most common production failure modes. Deviating without documented rationale is the most common cause of failure.
 - **Deploy governance first, agents second.** The roadmap provisions watsonx.governance before any sub-agent, creating an unbroken audit trail from day one. Retrofitting governance after go-live creates evidence gaps that cannot be filled retroactively.
-
-> **Next patterns in the IBM AI Well-Architected series.** #1 IBM Sovereign AI Deployment (Sovereign Core + LinuxONE) · #2 Hybrid RAG Reference Architecture (watsonx.ai + watsonx.data + Milvus) · #3 Responsible AI as Deployable Architecture (watsonx.governance + OpenPages) · #5 LLMOps Pipeline (watsonx.ai + OpenShift AI + Tekton) · #6 AI Observability with Instana
