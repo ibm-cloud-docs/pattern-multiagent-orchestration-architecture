@@ -70,7 +70,7 @@ Multi-agent systems address this by decomposing complex goals into sub-tasks, ro
 
 The below diagram shows the pattern architecture for multi-agent orchestration.
 ![Seven-layer model](multiagent_orchestration_architecture.png)
-{: caption="Seven-layer multi-agent orchestration architecture" caption-side="bottom"}
+{: caption="Figure 1. Seven-layer multi-agent orchestration architecture" caption-side="bottom"}
 
 The reference architecture is structured into seven horizontal layers. Each layer has defined responsibilities, IBM Cloud service assignments, failure modes, and integration contracts with adjacent layers. The layered model ensures separation of concerns — governance does not bleed into routing; memory does not couple to inference.
 
@@ -335,6 +335,7 @@ This reference architecture defines a production-grade, seven-layer multi-agent 
 The following sources support the product capabilities, protocol specifications, and competitive positioning described in this reference architecture. Links were verified current as of June 2026; vendor pages evolve, so consult the canonical documentation for the latest details.
 
 ### IBM watsonx Orchestrate
+{: #ibm-watsonx-orchestrate}
 
 - [IBM watsonx Orchestrate — Multi-agent orchestration](https://www.ibm.com/products/watsonx-orchestrate/multi-agent-orchestration) — Supervisor/router/planner model, agent styles (ReAct, Plan-Act, deterministic), and AI Gateway model selection.
 - [IBM watsonx Orchestrate — AI Agent Builder](https://www.ibm.com/products/watsonx-orchestrate/ai-agent-builder) — No-code/low-code/pro-code build paths and AI Gateway provider choice (Granite, OpenAI, Anthropic, Google Gemini, Mistral, Ollama).
@@ -344,6 +345,7 @@ The following sources support the product capabilities, protocol specifications,
 - [IBM watsonx Orchestrate ADK — GitHub repository](https://github.com/IBM/ibm-watsonx-orchestrate-adk) — Source, CLI, and Python library.
 
 ### Open protocols (MCP & A2A)
+{: #open-protocols-mcp-a2a}
 
 - [Introducing the Model Context Protocol — Anthropic](https://www.anthropic.com/news/model-context-protocol) — Original MCP announcement (November 2024).
 - [Model Context Protocol — Specification](https://modelcontextprotocol.io/specification/2025-11-25) — Authoritative MCP protocol requirements and JSON-RPC schema.
@@ -352,11 +354,13 @@ The following sources support the product capabilities, protocol specifications,
 - [A2A Protocol — Official site](https://a2a-protocol.org/) and [A2A specification (GitHub)](https://github.com/a2aproject/A2A) — Agent Cards, task lifecycle states, and transport (HTTP + SSE + JSON-RPC 2.0).
 
 ### IBM Granite models
+{: #ibm-granite-models}
 
 - [IBM Granite 4.0 — Model documentation](https://www.ibm.com/granite/docs/models/granite) — Hybrid Mamba-2/transformer architecture, MoE, and model tiers (H-Small, H-Tiny, H-Micro, Nano).
 - [Introducing the IBM Granite 4.1 family of models — IBM Research](https://research.ibm.com/blog/granite-4-1-ai-foundation-models) — Latest Granite family, instruction-following and tool-calling performance, and toggleable reasoning.
 
 ### Governance, sovereignty & observability
+{: #governance-sovereignty-observability}
 
 - [IBM Sovereign Core reaches general availability — IBM Newsroom (Think 2026)](https://newsroom.ibm.com/2026-05-05-think-2026-ibm-makes-digital-sovereignty-operational-with-general-availability-of-ibm-sovereign-core) — GA announcement (5 May 2026); four sovereignty pillars and runtime enforcement.
 - [IBM watsonx.governance](https://www.ibm.com/products/watsonx-governance) — Factsheets, agentic evaluation metrics, Governance Graph, and Risk Atlas.
@@ -365,6 +369,7 @@ The following sources support the product capabilities, protocol specifications,
 - [OpenTelemetry](https://opentelemetry.io/) — Vendor-neutral trace/metric/log instrumentation standard.
 
 ### IBM Cloud platform services
+{: #ibm-cloud-platform-services}
 
 - [IBM API Connect](https://www.ibm.com/products/api-connect) — API gateway, rate limiting, and policy enforcement (L1).
 - [IBM watsonx.data](https://www.ibm.com/products/watsonx-data) — Lakehouse with integrated Milvus vector store (L5 knowledge base).
