@@ -369,8 +369,3 @@ The following sources support the product capabilities, protocol specifications,
 - [IBM API Connect](https://www.ibm.com/products/api-connect) — API gateway, rate limiting, and policy enforcement (L1).
 - [IBM watsonx.data](https://www.ibm.com/products/watsonx-data) — Lakehouse with integrated Milvus vector store (L5 knowledge base).
 - [Red Hat OpenShift on IBM Cloud](https://www.ibm.com/products/openshift) — Hybrid runtime for MCP/A2A servers and sub-agents (L3/L4).
-
-### Competitive reference patterns
-
-- [Amazon Bedrock AgentCore](https://aws.amazon.com/bedrock/agentcore/) — AWS managed agent runtime, with MCP and A2A support, referenced for depth comparison.
-- [Azure AI Foundry Agent Service](https://learn.microsoft.com/en-us/azure/ai-foundry/agents/overview) — Microsoft's managed agent service, referenced for depth comparison.
