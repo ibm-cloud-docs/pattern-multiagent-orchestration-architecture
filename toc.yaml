@@ -9,7 +9,7 @@ toc:
     navigation: hidden
     href: /docs/pattern-multiagent-orchestration-architecture
     path: pattern-multiagent-orchestration-architecture
-    label: Multi Agent Orchestration Reference Architecture
+    label: white-paper
     description: Production-grade multi-agent systems on IBM Cloud using watsonx Orchestrate, MCP, A2A protocols, with governance and observability.
     authors:
     - name: Dwarkanath P Rao
