@@ -30,7 +30,7 @@ This reference architecture defines the design, deployment, and operational patt
 
 | Element | Selection |
 |---|---|
-| Orchestration engine | watsonx Orchestrate) |
+| Orchestration engine | watsonx Orchestrate |
 | Agent-to-tool protocol | Model Context Protocol (MCP) |
 | Agent-to-agent protocol | Agent-to-Agent (A2A) — originated by Google, governed by the Linux Foundation |
 | Governance layer | watsonx.governance (model + agentic governance) |
@@ -83,7 +83,7 @@ The reference architecture is structured into seven horizontal layers. Each laye
 | **L4 Sub-Agents** | Domain sub-agents (Granite 4.x / third-party LLMs via the AI Gateway) · Agent tool bindings · Short-term session memory · Agent health monitor (Instana) · Prompt template store |
 | **L5 Memory** | Db2 (relational + vector) — long-term agent memory · Milvus on watsonx.data — semantic retrieval · IBM Cloud Object Storage — artefact store · Redis — ephemeral session cache |
 | **L6 Observability** | IBM Instana — end-to-end agent tracing · OpenTelemetry collector — trace aggregation · watsonx.governance — quality & drift thresholds · IBM Cloud Logs — structured log pipeline |
-| **L7 Governance** | watsonx.governance — agent behaviour audit & evaluation · IBM OpenPages — risk & compliance evidence · IBM IAM — RBAC for agent permissions · IBM Sovereign Core — runtime compliance controls (preview → GA mid-2026) |
+| **L7 Governance** | watsonx.governance — agent behaviour audit & evaluation · IBM OpenPages — risk & compliance evidence · IBM IAM — RBAC for agent permissions · IBM Sovereign Core — runtime compliance controls (generally available since Think 2026, May 2026) |
 {: caption="Seven-layer architecture model" caption-side="bottom"}
 
 ### Data Flow: Request Lifecycle
@@ -180,8 +180,8 @@ watsonx Orchestrate supports **both**: MCP for importing tools/servers, and A2A 
 
 | Sub-agent | Recommended model | Key tools | Notes |
 |---|---|---|---|
-| Research agent | Granite 4.x Instruct (8B class) | watsonx.data (Milvus), web search, document reader | Stream output for long-form research |
-| Enterprise data agent | Granite 4.x Instruct (8B class) | Db2 query, SAP connector, Salesforce connector | Read-only tool bindings by default |
+| Research agent | Granite 4.x H-Tiny Instruct (7B) | watsonx.data (Milvus), web search, document reader | Stream output for long-form research |
+| Enterprise data agent | Granite 4.x H-Tiny Instruct (7B) | Db2 query, SAP connector, Salesforce connector | Read-only tool bindings by default |
 | Code generation agent | Granite 4.x (code-capable) | Code execution (Code Engine), GitHub connector | Sandboxed execution mandatory |
 | Decision agent | Granite 4.x reasoning ("thinking") | OpenPages (risk rules), regulatory tools | Compliance-sensitive; all outputs to governance |
 | Summarisation agent | Granite 4.x small (edge-class) | Document reader, IBM Fusion CAS | High-volume, low-latency; candidate for LinuxONE inference |
@@ -248,8 +248,8 @@ Each decision was made after evaluating competing approaches against the IBM Clo
 |---|---|---|---|
 | **Orchestration engine** | LangGraph, AutoGen, CrewAI, custom-built on OpenShift | **watsonx Orchestrate** | GA product with an extensive connector catalogue, native watsonx.governance integration, IBM support SLAs, open MCP + A2A support, and an agentic control plane. LangGraph/CrewAI remain valid for sub-agent internals, registered as A2A collaborators — not as the supervisor. |
 | **Agent-to-tool protocol** | REST/HTTP, gRPC, LangChain tool format | **MCP** | Open standard for tool/data access: standardised schema, structured auth, server discovery. Supported natively by watsonx Orchestrate. |
-| **Agent-to-agent protocol** | Custom message bus, proprietary RPC | **A2A** | Open standard (Google → Linux Foundation) for agent collaboration and discovery via Agent Cards. Lets agents built by different teams/vendors interoperate without custom adapters. Supported by watsonx Orchestrate (v0.3.0). |
-| **Supervisor model** | Third-party GPT-class, Llama 4, Granite 4.x Instruct | **Granite 4.x reasoning ("thinking") variant** | Multi-step decomposition needs reasoning. Granite reasoning variants provide this without the cost/sovereignty concerns of third-party models. Falls back to Granite 4.x Instruct (8B class). |
+| **Agent-to-agent protocol** | Custom message bus, proprietary RPC | **A2A** | Open standard (Google → Linux Foundation) for agent collaboration and discovery via Agent Cards. Lets agents built by different teams/vendors interoperate without custom adapters. Supported by the watsonx Orchestrate ADK (1.15.0+), which implements A2A protocol version 0.3 for agent registration and operation. |
+| **Supervisor model** | Third-party GPT-class, Llama 4, Granite 4.x Instruct | **Granite 4.x reasoning ("thinking") variant** | Multi-step decomposition needs reasoning. Granite reasoning variants provide this without the cost/sovereignty concerns of third-party models. Falls back to Granite 4.x H-Small Instruct (32B/9B active). |
 | **Conversation state store** | Redis only, PostgreSQL, Cloudant | **Db2 (relational + vector)** | Row-level security for tenant isolation, vector column for semantic retrieval, governance-tooling integration. Redis retained as ephemeral working memory only. |
 | **Vector store** | Elasticsearch, pgvector, Pinecone | **Milvus via watsonx.data** | IBM-managed within watsonx.data: data-lineage tracking, access governance, Iceberg table support. No external SaaS dependency. |
 | **MCP/A2A server runtime** | AWS Lambda, Cloud Functions, bare VMs | **Red Hat OpenShift (IBM Cloud)** | Portability to hybrid environments, native mTLS via OpenShift Service Mesh, consistent deployment model with the watsonx platform. |
@@ -298,7 +298,7 @@ Each decision was made after evaluating competing approaches against the IBM Clo
 | Redis plan | Standard | Standard | Standard HA |
 | Instana tier | Trial | SaaS Professional | SaaS Enterprise |
 | Governance enforcement | Advisory (log only) | Enforcing (block + log) | Enforcing (block + log + OpenPages) |
-| Sovereign Core enabled | No | No | Yes (regulated deployments; subject to GA availability) |
+| Sovereign Core enabled | No | No | Yes (regulated deployments) |
 {: caption="Environment configuration by stage" caption-side="bottom"}
 
 
@@ -317,23 +317,6 @@ Each decision was made after evaluating competing approaches against the IBM Clo
 {: caption="Anti-pattern library" caption-side="bottom"}
 
 
-
-
-## Implementation Roadmap
-{: #implementation-roadmap}
-
-| Phase | Duration | Outcome | Success criterion |
-|---|---|---|---|
-| 1 | Weeks 1–3 | Foundation: deploy `ibm-agent-governance` and `ibm-agent-memory`. Register all planned models in watsonx.governance. Define tenant IAM structure. | All models registered; Db2 schema deployed; IAM service IDs created per sub-agent. |
-| 2 | Weeks 4–6 | Interop plane: deploy `ibm-ai-gateway` and `ibm-interop-plane`. Expose 3 enterprise MCP servers (e.g., Salesforce, ServiceNow, Db2); register at least one A2A collaborator. Validate mTLS. | End-to-end MCP tool call and A2A collaboration succeed with full Instana trace and governance log. |
-| 3 | Weeks 7–10 | Sub-agents: deploy first 2–3 domain sub-agents (recommend research + enterprise data). Validate fallback chains; load-test individual agents. | Sub-agents respond within SLO; fallback activates correctly on simulated failure; governance records created. |
-| 4 | Weeks 11–13 | Orchestration: deploy `ibm-orchestrate-core`. Integrate supervisor with sub-agents. Run end-to-end scenarios; tune decomposition prompt. | Complete request-lifecycle traces in Instana; supervisor decomposes 90% of test scenarios correctly. |
-| 5 | Weeks 14–16 | Observability + hardening: deploy `ibm-agent-observability`. Establish baselines; configure alerts; load-test the full system. | All 7 SLO metrics instrumented; alert policies fire in simulated failures. |
-| 6 | Week 17+ | Production: enable IBM Sovereign Core (regulated deployments, subject to GA). Activate OpenPages integration. Conduct governance readiness review. | First production interaction generates a complete OpenPages evidence record; governance review signed off. |
-{: caption="Implementation roadmap phases" caption-side="bottom"}
-
-
-
 ## Summary and Key Takeaways
 {: #summary-and-key-takeaways}
 
@@ -344,3 +327,50 @@ This reference architecture defines a production-grade, seven-layer multi-agent 
 - **MCP and A2A are complementary open standards.** MCP connects agents to tools and data; A2A connects agents to each other. This pattern uses both, and watsonx Orchestrate supports both — avoiding the lock-in of proprietary inter-agent protocols.
 - **The anti-pattern library is as important as the pattern.** The six anti-patterns are the most common production failure modes. Deviating without documented rationale is the most common cause of failure.
 - **Deploy governance first, agents second.** The roadmap provisions watsonx.governance before any sub-agent, creating an unbroken audit trail from day one. Retrofitting governance after go-live creates evidence gaps that cannot be filled retroactively.
+
+
+## References
+{: #references}
+
+The following sources support the product capabilities, protocol specifications, and competitive positioning described in this reference architecture. Links were verified current as of June 2026; vendor pages evolve, so consult the canonical documentation for the latest details.
+
+### IBM watsonx Orchestrate
+
+- [IBM watsonx Orchestrate — Multi-agent orchestration](https://www.ibm.com/products/watsonx-orchestrate/multi-agent-orchestration) — Supervisor/router/planner model, agent styles (ReAct, Plan-Act, deterministic), and AI Gateway model selection.
+- [IBM watsonx Orchestrate — AI Agent Builder](https://www.ibm.com/products/watsonx-orchestrate/ai-agent-builder) — No-code/low-code/pro-code build paths and AI Gateway provider choice (Granite, OpenAI, Anthropic, Google Gemini, Mistral, Ollama).
+- [watsonx Orchestrate Agent Development Kit (ADK) — Developer documentation](https://developer.watson-orchestrate.ibm.com/) — ADK reference, Developer Edition, and protocol support.
+- [watsonx Orchestrate ADK 1.15.0 release notes](https://developer.watson-orchestrate.ibm.com/_releases/1.15.0/release/release) — Confirms ADK support for **A2A protocol version 0.3** (versions 0.2/0.2.1 deprecated).
+- [watsonx Orchestrate ADK — Managing LLMs via AI Gateway](https://developer.watson-orchestrate.ibm.com/llm/managing_llm) — Supported AI Gateway providers and routing/fallback configuration.
+- [IBM watsonx Orchestrate ADK — GitHub repository](https://github.com/IBM/ibm-watsonx-orchestrate-adk) — Source, CLI, and Python library.
+
+### Open protocols (MCP & A2A)
+
+- [Introducing the Model Context Protocol — Anthropic](https://www.anthropic.com/news/model-context-protocol) — Original MCP announcement (November 2024).
+- [Model Context Protocol — Specification](https://modelcontextprotocol.io/specification/2025-11-25) — Authoritative MCP protocol requirements and JSON-RPC schema.
+- [Linux Foundation launches the Agent2Agent (A2A) Protocol Project](https://www.linuxfoundation.org/press/linux-foundation-launches-the-agent2agent-protocol-project-to-enable-secure-intelligent-communication-between-ai-agents) — Vendor-neutral governance established 23 June 2025.
+- [Google Cloud donates A2A to the Linux Foundation — Google Developers Blog](https://developers.googleblog.com/en/google-cloud-donates-a2a-to-linux-foundation/) — Founding members and project scope.
+- [A2A Protocol — Official site](https://a2a-protocol.org/) and [A2A specification (GitHub)](https://github.com/a2aproject/A2A) — Agent Cards, task lifecycle states, and transport (HTTP + SSE + JSON-RPC 2.0).
+
+### IBM Granite models
+
+- [IBM Granite 4.0 — Model documentation](https://www.ibm.com/granite/docs/models/granite) — Hybrid Mamba-2/transformer architecture, MoE, and model tiers (H-Small, H-Tiny, H-Micro, Nano).
+- [Introducing the IBM Granite 4.1 family of models — IBM Research](https://research.ibm.com/blog/granite-4-1-ai-foundation-models) — Latest Granite family, instruction-following and tool-calling performance, and toggleable reasoning.
+
+### Governance, sovereignty & observability
+
+- [IBM Sovereign Core reaches general availability — IBM Newsroom (Think 2026)](https://newsroom.ibm.com/2026-05-05-think-2026-ibm-makes-digital-sovereignty-operational-with-general-availability-of-ibm-sovereign-core) — GA announcement (5 May 2026); four sovereignty pillars and runtime enforcement.
+- [IBM watsonx.governance](https://www.ibm.com/products/watsonx-governance) — Factsheets, agentic evaluation metrics, Governance Graph, and Risk Atlas.
+- [IBM OpenPages](https://www.ibm.com/products/openpages) — Risk and regulatory-compliance evidence management.
+- [IBM Instana Observability](https://www.ibm.com/products/instana) — End-to-end distributed tracing for agent workloads.
+- [OpenTelemetry](https://opentelemetry.io/) — Vendor-neutral trace/metric/log instrumentation standard.
+
+### IBM Cloud platform services
+
+- [IBM API Connect](https://www.ibm.com/products/api-connect) — API gateway, rate limiting, and policy enforcement (L1).
+- [IBM watsonx.data](https://www.ibm.com/products/watsonx-data) — Lakehouse with integrated Milvus vector store (L5 knowledge base).
+- [Red Hat OpenShift on IBM Cloud](https://www.ibm.com/products/openshift) — Hybrid runtime for MCP/A2A servers and sub-agents (L3/L4).
+
+### Competitive reference patterns
+
+- [Amazon Bedrock AgentCore](https://aws.amazon.com/bedrock/agentcore/) — AWS managed agent runtime, with MCP and A2A support, referenced for depth comparison.
+- [Azure AI Foundry Agent Service](https://learn.microsoft.com/en-us/azure/ai-foundry/agents/overview) — Microsoft's managed agent service, referenced for depth comparison.
