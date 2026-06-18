@@ -92,8 +92,7 @@ The reference architecture is structured into seven horizontal layers. Each laye
 ### Data Flow: Request Lifecycle
 {: #data-flow-request-lifecycle}
 
-![Request lifecycle](multiagent-orchestration-diagrams-request-lifecycle.drawio.svg)
-{: caption="Runtime request lifecycle across the seven layers" caption-side="bottom"}
+![Request lifecycle](multiagent-orchestration-diagrams-request-lifecycle.drawio.svg){: caption="Runtime request lifecycle across the seven layers" caption-side="bottom"}
 
 
 1. User sends a natural-language request. IBM API Connect (L1) authenticates via IBM Cloud IAM, checks token budget against the tenant quota, and queries the Redis semantic cache. On a cache hit, the cached response is returned immediately and the interaction is logged to watsonx.governance.
@@ -154,8 +153,7 @@ The reference architecture is structured into seven horizontal layers. Each laye
 {: #layer-3-interoperability-plane}
 
 
-![MCP and A2A topology](multiagent-orchestration-diagrams-mcp-a2a-topology.drawio.svg)
-{: caption="MCP (agents → tools/data) and A2A (agent → agent) interop topology" caption-side="bottom"}
+![MCP and A2A topology](multiagent-orchestration-diagrams-mcp-a2a-topology.drawio.svg){: caption="MCP (agents → tools/data) and A2A (agent → agent) interop topology" caption-side="bottom"}
 
 **What the protocols provide.** Two complementary open standards operate here:
 
