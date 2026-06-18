@@ -2,7 +2,7 @@
 
 copyright:
   years: 2026
-lastupdated: "2026-06-16"
+lastupdated: "2026-06-18"
 
 keywords: multi-agent systems, watsonx orchestrate, agent orchestration, mcp, a2a, watsonx governance, agentic ai, enterprise ai, reference architecture
 
@@ -15,7 +15,11 @@ subcollection: pattern-multiagent-orchestration-architecture
 
 
 # Multi-Agent Orchestration Reference Architecture
-{: #multi-agent-orchestration-reference-architecture}
+{: #white-paper}
+
+
+A short description of what your white paper is about and what the reader will learn.
+{: shortdesc}
 
 This reference architecture provides a production-ready blueprint for building enterprise-grade multi-agent systems on IBM Cloud, leveraging watsonx Orchestrate for orchestration, open protocols (MCP and A2A) for interoperability, and watsonx.governance for regulatory-grade audit trails. The pattern addresses the complete lifecycle from API gateway through governance, defining seven architectural layers with clear separation of concerns, IBM Cloud service mappings, and anti-patterns to avoid. It is designed for regulated industries requiring sovereignty controls, hybrid deployment flexibility, and continuous compliance evidence collection.
 
@@ -69,8 +73,7 @@ Multi-agent systems address this by decomposing complex goals into sub-tasks, ro
 {: #seven-layer-model}
 
 The below diagram shows the pattern architecture for multi-agent orchestration.
-![Seven-layer model](multiagent_orchestration_architecture.png)
-{: caption="Figure 1. Seven-layer multi-agent orchestration architecture" caption-side="bottom"}
+![Seven-layer model](multiagent_orchestration_architecture.png){: caption="Figure 1. Seven-layer multi-agent orchestration architecture" caption-side="bottom"}
 
 The reference architecture is structured into seven horizontal layers. Each layer has defined responsibilities, IBM Cloud service assignments, failure modes, and integration contracts with adjacent layers. The layered model ensures separation of concerns — governance does not bleed into routing; memory does not couple to inference.
 
@@ -88,6 +91,10 @@ The reference architecture is structured into seven horizontal layers. Each laye
 
 ### Data Flow: Request Lifecycle
 {: #data-flow-request-lifecycle}
+
+![Request lifecycle](multiagent-orchestration-diagrams-request-lifecycle.drawio.svg)
+{: caption="Runtime request lifecycle across the seven layers" caption-side="bottom"}
+
 
 1. User sends a natural-language request. IBM API Connect (L1) authenticates via IBM Cloud IAM, checks token budget against the tenant quota, and queries the Redis semantic cache. On a cache hit, the cached response is returned immediately and the interaction is logged to watsonx.governance.
 2. On a cache miss, API Connect forwards the request to watsonx Orchestrate (L2). The supervisor agent classifies intent, decomposes the goal into a directed acyclic graph (DAG) of sub-tasks, and loads conversation history from the Db2 conversation state store.
@@ -145,6 +152,10 @@ The reference architecture is structured into seven horizontal layers. Each laye
 
 ### Layer 3 — Interoperability Plane (MCP + A2A)
 {: #layer-3-interoperability-plane}
+
+
+![MCP and A2A topology](multiagent-orchestration-diagrams-mcp-a2a-topology.drawio.svg)
+{: caption="MCP (agents → tools/data) and A2A (agent → agent) interop topology" caption-side="bottom"}
 
 **What the protocols provide.** Two complementary open standards operate here:
 
