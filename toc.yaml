@@ -17,6 +17,11 @@ toc:
       job-description: I am an architect for IBM Cloud.
       image: rao.jpg
       url: https://www.linkedin.com/in/dwarakanath/
+    - name: Pradeep Kadiyala
+      title: Sr. Architect IBM Cloud
+      job-description: I am an architect for IBM Cloud.
+      image: kp.png
+      url: https://www.linkedin.com/in/pradeepkadiyala1980/
   entries:
   - navgroup:
       id: overview
