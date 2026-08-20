@@ -83,6 +83,7 @@ Mainly used for querying and performing multiple steps to accomplish the task.
 A system design that takes you through all the aspects of a single-agent solution.
 
 ![Single Agent Design Pattern](image/single-agent.png)
+{: caption="Figure 1. Single Agent Design Pattern" caption-side="bottom"}
 
 High level system context with tools and services. A single-agent architecture is composed of four core layers:
 
@@ -138,8 +139,10 @@ Every additional agent-to-agent hop introduces an independent probability of fai
 | Magentic (Dynamic Manager) | Low | Unbounded / hard to predict | Very High | Runaway planning loops, cost overrun |
 | Custom Logic / Conditional Routing | High | Variable (rule-driven) | Low–Medium | Rule drift / untested branches |
 | Human-in-the-Loop Gate | Very High (at gate) | Adds wait time | Low (gate itself) | Approval bottleneck / alert fatigue |
+{: caption="Table 1. Multi-agent pattern comparison" caption-side="bottom"}
 
 ---
+
 ## Multi-Agent deployment pattern description
 {: #multi-agent-deployment-patterns}
 
@@ -149,8 +152,10 @@ Every additional agent-to-agent hop introduces an independent probability of fai
 A central agent receives the goal, decomposes it into sub-tasks, and delegates each to a specialized agent. It aggregates results and resolves conflicts before returning a final output. This is the multi-agent analogue of an API gateway: one entry point, many backend specialists.
 
 ![Coordinator / Dispatcher Pattern](image/coordinator.png)
+{: caption="Figure 2. Coordinator / Dispatcher Pattern" caption-side="bottom"}
 
 #### Engineering considerations
+{: #coordinator-engineering}
 
 - **Latency:** single routing hop — low Time-to-First-Token impact if the coordinator uses a small/fast model.
 
@@ -166,8 +171,10 @@ A central agent receives the goal, decomposes it into sub-tasks, and delegates e
 Agents are organized in layers where higher-level agents plan and lower-level agents execute. Enables complex goal decomposition across multiple tiers of specialization. A central agent routes tasks to domain experts, who may themselves further decompose work to sub-specialists.
 
 ![Hierarchical Orchestration Pattern](image/Hierarchical.png)
+{: caption="Figure 3. Hierarchical Orchestration Pattern" caption-side="bottom"}
 
 #### Engineering considerations
+{: #hierarchical-engineering}
 
 - **Best for:** complex, multi-domain problems requiring both strategic oversight and tactical execution.
 
@@ -185,8 +192,10 @@ Agents are organized in layers where higher-level agents plan and lower-level ag
 Agents operate in a fixed pipeline where the output of one agent becomes the input of the next. Best for tasks with clear, ordered dependencies. This is the most deterministic and lowest-latency-variance multi-agent pattern because a predefined workflow agent — not an LLM — governs the transition between steps.
 
 ![Sequential Pipeline Pattern](image/Sequential.png)
+{: caption="Figure 4. Sequential Pipeline Pattern" caption-side="bottom"}
 
 #### Engineering considerations
+{: #sequential-engineering}
 
 - **Advantage:** reduced latency and operational cost relative to LLM-orchestrated routing, since no model call is needed to decide "what runs next."
 
@@ -202,8 +211,10 @@ Agents operate in a fixed pipeline where the output of one agent becomes the inp
 Multiple agents work on independent sub-tasks simultaneously and results are merged. Reduces latency for tasks that can be parallelized e.g., a primary agent spawning parallel reviewers to independently check a infrastructure deployment request for security, performance and cost before a gather step consolidates findings.
 
 ![Concurrent (Parallel Fan-Out / Gather) Pattern](image/Concurrent.png)
+{: caption="Figure 5. Concurrent (Parallel Fan-Out / Gather) Pattern" caption-side="bottom"}
 
 #### Engineering considerations
+{: #concurrent-engineering}
 
 - **Advantage:** reduces overall wall-clock latency compared to sequential execution by gathering diverse information from multiple sources at the same time.
 
@@ -219,8 +230,10 @@ Multiple agents work on independent sub-tasks simultaneously and results are mer
 A producer agent generates output; a critic/evaluator agent scores it against defined criteria; feedback is passed back and the producer revises. The loop repeats until a quality threshold or maximum iteration count is reached.
 
 ![Loop (Evaluator-Optimizer) Pattern](image/Loop.png)
+{: caption="Figure 6. Loop (Evaluator-Optimizer) Pattern" caption-side="bottom"}
 
 #### Engineering considerations
+{: #loop-engineering}
 
 - **Risk:** non-convergence. Always cap `max_iterations` and define an explicit, machine-checkable exit condition (score ≥ threshold OR iteration count reached) rather than relying on the critic's free-text judgment alone.
 
@@ -234,8 +247,10 @@ A producer agent generates output; a critic/evaluator agent scores it against de
 Multiple agents with different perspectives or roles participate in a shared conversation thread, observed and optionally steered by a moderator (which may be a human, an agent, or both), converging on a consensus response.
 
 ![Group Chat / Collaborative Synthesis Pattern](image/Collaborative.png)
+{: caption="Figure 7. Group Chat / Collaborative Synthesis Pattern" caption-side="bottom"}
 
 #### Engineering considerations
+{: #group-chat-engineering}
 
 - **Best for:** open-ended analysis, brainstorming, or scenarios requiring multiple expert perspectives where structure emerges dynamically.
 
@@ -251,8 +266,10 @@ Multiple agents with different perspectives or roles participate in a shared con
 Control passes explicitly from one specialist agent to another as context requirements change, with only one agent active at a time. Handoff orchestration is the canonical implementation, illustrated by a support scenario: triage agent → technical infrastructure agent → financial resolution agent → customer support, with each agent deciding when to redirect.
 
 ![Handoff (Peer-to-Peer) Pattern](image/handoff.png)
+{: caption="Figure 8. Handoff (Peer-to-Peer) Pattern" caption-side="bottom"}
 
 #### Engineering considerations
+{: #handoff-engineering}
 
 - **Advantage:** dynamic specialization — one agent can identify the need for a specialist and forward the task, avoiding wasted compute on an ill-suited agent.
 
@@ -268,12 +285,14 @@ Control passes explicitly from one specialist agent to another as context requir
 A manager agent maintains a live task-and-progress ledger, dynamically assigns and reprioritizes sub-tasks across specialist agents, and loops until the goal is evaluated as complete. Derived from Microsoft Research's MagenticOne system, this is the least deterministic pattern in either vendor's catalog, designed specifically for open-ended problems that do not have a predetermined plan of approach.
 
 ![Magentic (Dynamic Manager) Orchestration Pattern](image/Manager.png)
+{: caption="Figure 9. Magentic (Dynamic Manager) Orchestration Pattern" caption-side="bottom"}
 
 <:note> ARCHITECTURAL GUIDANCE — use with caution
 
  Consistent with a preference for structured, predictable workflows: Magentic orchestration should be reserved for problems that genuinely resist upfront decomposition. It is the most powerful pattern and the easiest to misuse — latency is unbounded and hard to predict, token cost is the highest of any pattern (the manager re-plans on every loop), and the primary production risk is a runaway planning loop that silently exhausts budget. If a Sequential or Hierarchical pipeline can be reasoned about and debugged, it is worth more in production than a Magentic workflow with unpredictable token burn.
 
 #### Mandatory guardrails when Magentic is used
+{: #magentic-guardrails}
 
 - Hard ceiling on manager re-planning iterations and total tool-call budget per session.
 - HITL authorization gate before any tool call that performs a write, delete, or financial action (see Governance section below).
@@ -287,13 +306,17 @@ A manager agent maintains a live task-and-progress ledger, dynamically assigns a
 Workflow routing is driven by conditional rules or business logic rather than a fixed topology or an LLM-driven decision. Allows dynamic branching based on intermediate results while remaining fully deterministic and auditable — the routing function is ordinary code, not a model call.
 
 ![Custom Logic / Conditional Routing Pattern](image/Conditional.png)
+{: caption="Figure 10. Custom Logic / Conditional Routing Pattern" caption-side="bottom"}
 
 #### Cross-reference
+{: #custom-logic-cross-reference}
 
 - **Google ADK:** custom Python routing logic layered over `sub_agents`, bypassing AutoFlow's LLM-driven transfer in favor of deterministic if/else branching on structured intermediate output.
 - **Azure:** equivalent to workflow-as-code implementations (e.g., Durable Functions / Logic Apps fan-out) driving agent invocation based on business rules rather than model-generated routing.
 
 #### Engineering considerations
+{: #custom-logic-engineering}
+
 
 - Highest auditability of any dynamic-branching pattern — every route is testable with standard unit tests, independent of LLM non-determinism.
 - **Risk is rule drift:** as business logic evolves, untested branches accumulate. Treat the routing function itself as production code under the same CI/CD gates as the agents it invokes.
@@ -306,8 +329,10 @@ Workflow routing is driven by conditional rules or business logic rather than a 
 A human review or approval step is embedded at defined points in the workflow. Critical for high-stakes decisions where full autonomy is not acceptable.
 
 ![Human-in-the-Loop (HITL) Gate Pattern](image/hitl.png)
+{: caption="Figure 11. Human-in-the-Loop (HITL) Gate Pattern" caption-side="bottom"}
 
 #### Design decisions for every HITL gate
+{: #hitl-design-decisions}
 
 - **Mandatory vs. optional:** a mandatory gate makes the orchestration synchronous at that step — persist state at the checkpoint so the workflow can resume without replaying prior agent work.
 
@@ -316,6 +341,7 @@ A human review or approval step is embedded at defined points in the workflow. C
 - **Scope:** gate specific tool invocations rather than entire agent turns, so the orchestration proceeds autonomously for low-risk actions (read-only queries) and only blocks on sensitive operations (writes, deletes, financial transactions, external communications).
 
 #### Common implementation mistake
+{: #hitl-common-mistake}
 
 Creating unnecessary coordination complexity by using a Group Chat or Magentic pattern when a basic Sequential or Concurrent pattern with a single HITL gate would satisfy the requirement. Escalate topology complexity only after confirming the simpler pattern cannot express the required branching.
 
