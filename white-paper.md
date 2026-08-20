@@ -2,7 +2,7 @@
 
 copyright:
   years: 2026
-lastupdated: "2026-06-18"
+lastupdated: "2026-08-20"
 
 keywords: multi-agent systems, watsonx orchestrate, agent orchestration, mcp, a2a, watsonx governance, agentic ai, enterprise ai, reference architecture
 
@@ -53,290 +53,334 @@ IBM's differentiator in this space is **not** orchestration capability alone, an
 
 - Architecture Decision: This pattern uses watsonx Orchestrate as the multi-agent control plane over custom-built orchestration because it is production-ready, provides an extensive enterprise connector catalogue, watsonx Orchestrate supports MCP for tool integration and provides a built‑in collaborator‑agent framework that can be extended to interoperate with external agents via custom adapters and integrates natively with watsonx.governance for agent audit and evaluation. Custom frameworks (LangGraph, AutoGen, CrewAI) remain valid for specific sub-agent implementations and can be registered as A2A collaborators or exposed via MCP — not as replacement orchestrators.
 
+## AGENTIC AI DESIGN PATTERNS
+{: #agentic-ai-design-patterns}
 
+Agentic AI design patterns are identified as a Single Agent or Multi-Agent approach to accomplish a goal. Multi-agent architectures trade the simplicity of a single reasoning loop for specialization, parallelism, and fault isolation — at the cost of coordination overhead, additional token spend, and compounding error probability across agent-to-agent hops. The pattern selected should be the least complex one that still meets the task's accuracy, latency, and auditability requirements.
 
-## Context and Problem Statement
-{: #context-and-problem-statement}
+---
 
-### Why Multi-Agent Architecture
-{: #why-multi-agent-architecture}
+## What is a single agent design pattern
+{: #single-agent-design}
 
-Single-model inference patterns — including RAG — are insufficient for enterprise workflows that require parallel execution of heterogeneous tasks, specialised domain expertise across multiple models, tool use with external systems, iterative reasoning with feedback loops, and long-running stateful workflows with human-in-the-loop checkpoints.
+Purpose of a single agent is to perform an autonomous task within a given context and boundary. The agent operates within a defined scope: it receives a goal, breaks it into steps, and executes them independently without requiring human input at each step. Its behavior is governed by a system prompt that sets the role, constraints, and boundaries of what the agent is allowed to do. Within a session, the agent maintains memory of prior steps, allowing it to chain actions and make contextual decisions until the goal is complete.
 
-Multi-agent systems address this by decomposing complex goals into sub-tasks, routing each to a specialised agent, coordinating the results, and maintaining shared context — all governed by an orchestration plane that handles failure, retry, and escalation.
+Mainly used for querying and performing multiple steps to accomplish the task.
 
+**Single agent design pattern uses:**
 
-## Architecture Overview
-{: #architecture-overview}
+- **Prompts:** the system prompt defines the agent's role, tone, task boundaries, and constraints. It is the primary mechanism for controlling agent behavior.
 
-### Seven-Layer Model
-{: #seven-layer-model}
+- **Knowledge base:** an external data source (vector database, document store, or structured data) the agent queries to retrieve relevant context it was not trained on.
 
-The below diagram shows the pattern architecture for multi-agent orchestration.
-![Seven-layer model](multiagent_orchestration_architecture.png){: caption="Figure 1. Seven-layer multi-agent orchestration architecture" caption-side="bottom"}
+- **Behaviour:** the internal reasoning loop that determines how the agent interprets inputs, decides what action to take next, and when to stop.
 
-The reference architecture is structured into seven horizontal layers. Each layer has defined responsibilities, IBM Cloud service assignments, failure modes, and integration contracts with adjacent layers. The layered model ensures separation of concerns — governance does not bleed into routing; memory does not couple to inference.
+- **Tools:** external capabilities the agent can invoke at runtime, such as APIs, web search, code execution, or database queries. Tool connectivity is standardized through the Model Context Protocol (MCP), an open protocol that defines how agents discover, connect to, and call external tools and data sources in a consistent way across frameworks.
 
+### System Design
+{: #single-agent-system-design}
 
-| Layer | Components and responsibilities |
-|---|---|
-| **L1 Consumer** | IBM API Connect (AI Gateway) · IBM Cloud Internet Services (WAF) · OIDC/IAM authentication · Rate limiting & token budgets · Semantic cache (Redis) |
-| **L2 Orchestrator** | watsonx Orchestrate (supervisor agent) · Goal decomposition engine · Sub-agent registry · Conversation state manager (Db2) · Retry & fallback controller |
-| **L3 Interop Plane (MCP + A2A)** | MCP server registry & tool schemas · MCP auth proxy (OAuth2/mTLS) · **A2A agent registry & Agent Cards** for agent-to-agent collaboration · Server/agent lifecycle manager (OpenShift) · Protocol routing |
-| **L4 Sub-Agents** | Domain sub-agents (Granite 4.x / third-party LLMs via the AI Gateway) · Agent tool bindings · Short-term session memory · Agent health monitor (Instana) · Prompt template store |
-| **L5 Memory** | Db2 (relational + vector) — long-term agent memory · Milvus on watsonx.data — semantic retrieval · IBM Cloud Object Storage — artefact store · Redis — ephemeral session cache |
-| **L6 Observability** | IBM Instana — end-to-end agent tracing · OpenTelemetry collector — trace aggregation · watsonx.governance — quality & drift thresholds · IBM Cloud Logs — structured log pipeline |
-| **L7 Governance** | watsonx.governance — agent behaviour audit & evaluation · IBM OpenPages — risk & compliance evidence · IBM IAM — RBAC for agent permissions · IBM Sovereign Core — runtime compliance controls (generally available since Think 2026, May 2026) |
-{: caption="Seven-layer architecture model" caption-side="bottom"}
+A system design that takes you through all the aspects of a single-agent solution.
 
-### Data Flow: Request Lifecycle
-{: #data-flow-request-lifecycle}
+![Single Agent Design Pattern](image/single-agent.png)
 
-![Request lifecycle](multiagent-orchestration-diagrams-request-lifecycle.drawio.svg){: caption="Runtime request lifecycle across the seven layers" caption-side="bottom"}
+High level system context with tools and services. A single-agent architecture is composed of four core layers:
 
+- **Orchestration Layer:** receives the user goal, manages the agent loop, and coordinates between components.
 
-1. User sends a natural-language request. IBM API Connect (L1) authenticates via IBM Cloud IAM, checks token budget against the tenant quota, and queries the Redis semantic cache. On a cache hit, the cached response is returned immediately and the interaction is logged to watsonx.governance.
-2. On a cache miss, API Connect forwards the request to watsonx Orchestrate (L2). The supervisor agent classifies intent, decomposes the goal into a directed acyclic graph (DAG) of sub-tasks, and loads conversation history from the Db2 conversation state store.
-3. For each sub-task, watsonx Orchestrate consults the sub-agent registry. Internal tools and enterprise systems are called via **MCP**; collaboration with external or third-party agents is performed via **A2A**. The auth proxy validates OAuth2 tokens before forwarding.
-4. Each sub-agent (L4) receives its task, loads short-term session memory, executes inference (Granite 4.x, third-party LLM via the AI Gateway, or a tool-only agent), and returns a structured response. Instana traces each hop with token count, latency, and model-version metadata.
-5. Responses requiring retrieval trigger a semantic search to Milvus (L5). Retrieved context is ranked, injected into the sub-agent's prompt, and recorded in watsonx.governance with retrieval-source lineage.
-6. IBM Instana (L6) assembles the distributed trace across all hops into a single correlated request span. Token cost, per-agent latency, and tool-call counts are attributed to the originating tenant. Threshold violations alert (e.g., via PagerDuty).
-7. watsonx.governance (L7) records the complete interaction: agents invoked, tools and external agents called, data accessed (and jurisdiction), model versions, and final output. IBM OpenPages ingests the record for regulatory evidence. IBM Sovereign Core validates that no data left its designated jurisdiction.
+- **Tool Registry:** a catalog of available tools the agent can invoke, along with their schemas and access controls. In MCP-based architectures, tools are exposed as MCP Servers — lightweight services that advertise their capabilities to the agent and handle execution. The agent connects to these servers via the MCP client built into the orchestration layer.
 
+- **Memory Store:** maintains short-term (in-session) context and optionally long-term memory across sessions using a vector or key-value store.
 
+- **Output Handler:** validates, formats, and delivers the agent's final response to the consuming application or user.
 
-## Layer Specifications
-{: #layer-specifications}
+Single Agents are determined by 3 main categories depending on task complexity, flexibility, transparency, and requirements.
 
-### Layer 1 — Consumer & AI Gateway
-{: #layer-1-consumer-ai-gateway}
+- **Default:** Ideal for quick tasks, very dynamic and prompt driven. The agent responds directly based on its system prompt and input context without an explicit reasoning chain. Best suited for well-defined, low-ambiguity tasks such as summarization, classification, or single-step data retrieval.
 
-**Responsibilities.** L1 is the single entry point for all agent interactions. It enforces authentication, applies rate limiting and token budgeting per tenant, routes to the correct agent pipeline, and returns cached responses where available. No request reaches the orchestration layer without passing through L1.
+- **ReAct:** Ideal for exploratory tasks like research, very adaptive and highly transparent. The agent alternates between Reasoning and Acting: it thinks through the problem, takes an action (e.g., a search or tool call), observes the result, then reasons again. This loop continues until a satisfactory answer is reached, making it highly effective for tasks that require gathering and synthesizing information from multiple sources.
 
-| Service | Role | Configuration note |
-|---|---|---|
-| IBM API Connect | Primary AI gateway — routing, auth, rate limiting | Deploy with DataPower Gateway for enterprise policy enforcement. Configure per-tenant plans with token-per-minute quotas. |
-| IBM Cloud Internet Services (CIS) | WAF, DDoS protection, health-check failover | Health checks against the watsonx Orchestrate endpoint every 30s; failover to secondary region on 3 consecutive failures. |
-| Redis on IBM Cloud Databases | Semantic cache layer | Cache embeddings of recent queries + responses. TTL 1h for factual queries; 5m for time-sensitive/personalised. Use watsonx.ai (Granite) embeddings as the cache key hash. |
-| IBM Cloud IAM | Identity & OIDC token validation | Issue short-lived (15-minute) service tokens for agent-to-agent and tool calls. Never use long-lived API keys for inter-agent communication in production. |
-{: caption="Layer 1 services and configuration" caption-side="bottom"}
+- **Plan-Act:** Ideal for multi-step workflows, very structured and highly transparent. The agent first generates a full plan of steps before executing any action. This separation of planning and execution makes it predictable and auditable, and well-suited for complex workflows where order of operations and error recovery matter.
 
-- Anti-pattern: bypassing the gateway: Exposing watsonx Orchestrate endpoints directly to clients removes rate limiting, token budget enforcement, and the semantic cache. Observed in PoC-to-production migrations; creates uncontrolled cost exposure. Every request path must route through L1.
+### Frameworks
+{: #single-agent-frameworks}
 
-### Layer 2 — Orchestration (watsonx Orchestrate)
-{: #layer-2-orchestration}
+- Watsonx Orchestrate – low code / no code
+- Langchain
+- Crew AI
+- CUDA
+- **Model Context Protocol (MCP):** open standard for agent-to-tool connectivity, enabling agents to communicate with any MCP-compliant server regardless of the underlying framework.
 
-**Supervisor agent design.** watsonx Orchestrate functions as the supervisor — the top-level reasoner that receives user goals, decomposes them, dispatches sub-agents (via MCP tools and A2A collaborators), collects results, resolves conflicts, and synthesises the final response. The supervisor does not perform domain reasoning directly; it delegates to sub-agents.
+## What is a Multi-agent design pattern
+{: #multi-agent-design-pattern}
 
-**Goal decomposition.** The supervisor uses a structured decomposition prompt that produces a JSON DAG of sub-tasks. Each node specifies the target sub-agent, the input context slice, the expected output schema (JSON Schema), upstream dependencies, and fallback behaviour on failure.
+In multi-agent patterns, specialized agents are combined to solve complex problems through either deterministic workflows between agents or dynamic, coordinated, and orchestrated workflows. Unlike a single agent, multi-agent systems distribute work across agents with distinct roles, tools, and knowledge boundaries — enabling parallelism, specialization, and fault isolation, at the cost of coordination overhead and compounding error probability.
 
-- Design principle: thin supervisor: The supervisor should contain minimal domain logic — decomposition strategy, routing rules, conflict resolution, and escalation conditions only. Domain knowledge lives exclusively in sub-agents. A supervisor with domain logic becomes a bottleneck, a failure point, and a governance liability: it is harder to audit one complex agent than five simple specialised ones.
+The key design decision is whether agents follow a fixed topology (deterministic — preferred for enterprise, auditable workloads) or dynamically negotiate tasks based on context (orchestrated / LLM-driven — higher flexibility, lower predictability).
 
-**Conversation state management.**
-- Store conversation history in IBM Cloud Db2 (relational) with a vector column for semantic similarity lookups.
-- Schema: `conversation_id, turn_sequence, agent_id, role (user/assistant/tool), content_text, content_embedding (vector), created_at, governance_ref`.
-- Load the last *N* = 10 turns (configurable) into the supervisor context window per request.
-- Archive conversations older than 90 days to IBM Cloud Object Storage; retain `governance_ref` links permanently for audit continuity.
-- Never store PII in `content_text` without field-level encryption via IBM Key Protect.
+### Reliability math: why topology choice matters
+{: #reliability-math}
 
-**Retry and fallback.**
+Every additional agent-to-agent hop introduces an independent probability of failure (misrouted task, dropped context, hallucinated intermediate output). For n sequential or hierarchical hops each with independent accuracy p, the compounded end-to-end reliability approximates pⁿ. A 3-step chain at 90% per-step accuracy yields 0.9³ ≈ 73% — not 90%. This is the primary argument for: (a) keeping topologies as shallow as the task allows, (b) placing evaluator/critic checkpoints after high-risk steps rather than only at the end, and (c) reserving open-ended orchestration (such as Magentic, Group Chat) for problems that genuinely cannot be decomposed up front.
 
-| Failure type | Detection | Retry strategy | Fallback |
-|---|---|---|---|
-| Sub-agent timeout | Instana span exceeds SLO threshold | 3 retries, exponential backoff (1s, 2s, 4s) | Route to backup sub-agent or degrade gracefully with partial result |
-| MCP/A2A call error | HTTP 5xx from server/agent | 2 retries, then dead-letter to IBM Event Streams | Return structured error to supervisor; log to governance |
-| Model inference failure | Non-parseable or empty output | Re-prompt with simplified instruction, 1 retry | Switch to deterministic rule-based fallback agent |
-| Governance block | watsonx.governance threshold violation | No retry — block is intentional | Return refusal response; log violation to OpenPages |
-{: caption="Retry and fallback strategies" caption-side="bottom"}
+### Pattern Comparison Matrix
+{: #pattern-comparison-matrix}
 
-### Layer 3 — Interoperability Plane (MCP + A2A)
-{: #layer-3-interoperability-plane}
-
-
-![MCP and A2A topology](multiagent-orchestration-diagrams-mcp-a2a-topology.drawio.svg){: caption="MCP (agents → tools/data) and A2A (agent → agent) interop topology" caption-side="bottom"}
-
-**What the protocols provide.** Two complementary open standards operate here:
-
-- **MCP (Model Context Protocol)** — Standardises how agents connect to **tools and data sources**: a tool schema (JSON Schema), a structured request/response protocol, a server registry for discovery, and OAuth2/mTLS authentication at tool boundaries.
-- **A2A (Agent-to-Agent)** — originated by Google, donated to the **Linux Foundation** (June 2025), with 150+ supporting organisations by 2026. Standardises **agent-to-agent** communication: capability discovery via *Agent Cards*, a task lifecycle (submitted → working → input-required → completed/failed/canceled), over HTTP + Server-Sent Events + JSON-RPC 2.0.
-
-watsonx Orchestrate supports **both**: MCP for importing tools/servers, and A2A  for integrating external agents as collaborators. (IBM also contributed the earlier Agent Communication Protocol, ACP, in 2025; the ecosystem has since converged on A2A for agent-to-agent interoperability.)
-
-**Server/agent topology.** Three categories of MCP server, plus A2A collaborators, deployed and scaled independently on Red Hat OpenShift:
-
-- **Enterprise system MCP servers** — expose SAP, Salesforce, ServiceNow, Db2, etc. as MCP tool endpoints. Stateless servers that translate MCP tool calls into enterprise API calls; implemented using watsonx Orchestrate's connector framework.
-- **Domain knowledge MCP servers** — provide semantic retrieval from watsonx.data (Milvus) for specific domains (product catalogue, policy documents, customer history), each with scoped access controls to prevent cross-domain leakage at the architectural level.
-- **Capability MCP servers** — expose general capabilities (code execution, document processing, image analysis, calculation) as reusable tools. Deploy on IBM Cloud Code Engine for serverless scaling.
-- **A2A collaborators** — external/third-party agents (built on BeeAI, LangGraph, CrewAI, or other platforms) registered as A2A collaborators with published Agent Cards.
-
-**Authentication model.** Every MCP/A2A call must be authenticated. The auth proxy (OpenShift sidecar) enforces:
-- OAuth2 client-credentials flow for machine-to-machine calls; IBM Cloud IAM issues short-lived (15-minute) tokens.
-- mTLS for intra-cluster communication; certificates managed by IBM Certificate Manager.
-- Scoped permissions — each sub-agent's service identity is granted only the tool scopes / agent collaborations it requires. No wildcard permissions.
-- All calls logged with caller identity, target server/agent, tool/skill name, input hash (not raw input — PII protection), output hash, latency, and governance correlation ID.
-
-
-### Layer 4 — Sub-Agents
-{: #layer-4-sub-agents}
-
-**Design principles.**
-- Each sub-agent is responsible for exactly one domain or capability. It must not call another sub-agent directly — inter-agent routing goes through the supervisor (L2), using MCP for tools and A2A for agent collaboration.
-- Sub-agents are stateless between turns. Session memory lives in the L5 memory layer and is injected via the call context.
-- Each sub-agent has a documented system prompt, input schema, output schema, and a set of permitted tool/agent bindings — version-controlled in IBM Cloud Object Storage.
-- Sub-agents declare their model dependency. If the assigned model is unavailable, the sub-agent falls back to a defined backup model within the same capability tier (the Orchestrate AI Gateway can route across Granite, Claude, OpenAI, Gemini, Mistral, and others).
-
-**Recommended sub-agent catalogue (illustrative).**
-
-| Sub-agent | Recommended model | Key tools | Notes |
-|---|---|---|---|
-| Research agent | Granite 4.x H-Tiny Instruct (7B) | watsonx.data (Milvus), web search, document reader | Stream output for long-form research |
-| Enterprise data agent | Granite 4.x H-Tiny Instruct (7B) | Db2 query, SAP connector, Salesforce connector | Read-only tool bindings by default |
-| Code generation agent | Granite 4.x (code-capable) | Code execution (Code Engine), GitHub connector | Sandboxed execution mandatory |
-| Decision agent | Granite 4.x reasoning ("thinking") | OpenPages (risk rules), regulatory tools | Compliance-sensitive; all outputs to governance |
-| Summarisation agent | Granite 4.x small (edge-class) | Document reader, IBM Fusion CAS | High-volume, low-latency; candidate for LinuxONE inference |
-| Notification agent | Tool-only (no LLM) | Email, Slack, ServiceNow connectors | Deterministic; pure tool/skill dispatch |
-{: caption="Recommended sub-agent catalogue" caption-side="bottom"}
-
-### Layer 5 — Memory Architecture
-{: #layer-5-memory-architecture}
-
-This pattern defines four memory types, each with a distinct backend, scope, lifetime, and access pattern.
-
-| Memory type | Scope | Lifetime | Backend | Use case |
+| Pattern | Determinism | Latency Profile | Token Cost | Primary Failure Mode |
 |---|---|---|---|---|
-| Working memory | Single turn | Request duration | Redis (in-memory) | Current sub-task context, intermediate results |
-| Episodic memory | Per conversation | Session TTL (4h default) | Redis + Db2 (relational) | Conversation history, in-session preferences |
-| Semantic memory | Per user / tenant | Persistent | Db2 (vector column) | Long-term preferences, past interaction patterns |
-| Knowledge base | Per domain | Managed update cycle | Milvus (watsonx.data) | Domain knowledge, policy/product data for RAG |
-{: caption="Memory architecture types" caption-side="bottom"}
+| Coordinator / Dispatcher | High | Low (1 routing hop) | Low | Misrouting to wrong specialist |
+| Hierarchical | High | Medium (multi-tier) | Medium–High | Error compounding across tiers |
+| Sequential Pipeline | Very High | Medium (sum of steps) | Medium | Hard stop if one stage fails |
+| Concurrent (Fan-Out/Gather) | High | Low (parallel wall-clock) | High (N× calls) | Conflicting outputs at merge |
+| Loop (Evaluator-Optimizer) | Medium | High (N iterations) | High (N× calls) | Non-convergence / infinite loop |
+| Group Chat / Collaborative Synthesis | Low–Medium | Medium–High | High | Groupthink / unresolved conflict |
+| Handoff (Peer-to-Peer) | Medium | Variable | Medium | Dropped context on transfer |
+| Magentic (Dynamic Manager) | Low | Unbounded / hard to predict | Very High | Runaway planning loops, cost overrun |
+| Custom Logic / Conditional Routing | High | Variable (rule-driven) | Low–Medium | Rule drift / untested branches |
+| Human-in-the-Loop Gate | Very High (at gate) | Adds wait time | Low (gate itself) | Approval bottleneck / alert fatigue |
 
-> **Memory security requirement.** All stores holding user data must be encrypted at rest using IBM Key Protect with customer-managed root keys (BYOK). Access to the Db2 semantic store must be gated by IBM Cloud IAM with row-level security — sub-agents must not read other tenants' memory. Memory writes must produce an immutable governance record in watsonx.governance.
+---
+## Multi-Agent deployment pattern description
+{: #multi-agent-deployment-patterns}
 
-### Layer 6 — Observability
-{: #layer-6-observability}
+### 1. Coordinator / Dispatcher Pattern
+{: #coordinator-dispatcher-pattern}
 
-**IBM Instana as the AI tracing backbone.** In a multi-agent architecture, a single user request generates a trace tree spanning the API Connect hop, supervisor reasoning spans, each MCP tool call and A2A collaboration with attribution, each LLM inference (token count + latency), each memory read/write, and final synthesis. Instana correlates these under a single trace ID derived from the governance correlation ID generated at L1.
+A central agent receives the goal, decomposes it into sub-tasks, and delegates each to a specialized agent. It aggregates results and resolves conflicts before returning a final output. This is the multi-agent analogue of an API gateway: one entry point, many backend specialists.
 
-**Key metrics.**
+![Coordinator / Dispatcher Pattern](image/coordinator.png)
 
-| Metric | Target SLO | Alert threshold | Owner layer |
-|---|---|---|---|
-| End-to-end request latency (P99) | < 8 s | > 12 s | L1 — API Connect |
-| Supervisor decomposition time | < 800 ms | > 2 s | L2 — Orchestrate |
-| Sub-agent inference latency (P95) | < 3 s | > 6 s | L4 — Sub-agents |
-| MCP/A2A call success rate | > 99.5% | < 99.0% | L3 — Interop plane |
-| Semantic cache hit rate | > 30% | < 15% sustained | L1 — Redis |
-| Token cost per request (by tenant) | < defined budget | > 120% of budget | L1 — API Connect |
-| Governance audit record creation rate | 100% of requests | < 99.9% | L7 — Governance |
-{: caption="Key observability metrics and SLOs" caption-side="bottom"}
+#### Engineering considerations
 
-### Layer 7 — Governance
-{: #layer-7-governance}
+- **Latency:** single routing hop — low Time-to-First-Token impact if the coordinator uses a small/fast model.
 
-**Agent behaviour auditing and evaluation.** watsonx.governance agentic capabilities (introduced 2025, expanded through 2026) trace agent decision chains, not just model outputs. Every invocation produces a governance record: originating request context; which sub-agents were invoked and in what sequence; which tools/agents were called and with what parameters; which data sources (and jurisdictions) were accessed; the final output with confidence metadata; and whether any governance policy was triggered. Agentic evaluation metrics include context relevance, faithfulness, answer similarity, and tool-selection quality.
+- **Cost:** cheapest multi-agent topology; only the coordinator's classification call plus one specialist call are billed per request.
 
-**Five governance checkpoints.**
+- **Failure mode:** misclassification. Mitigate with a confidence threshold on the routing decision and a fallback "clarify with user" branch rather than a forced guess.
 
-| # | Checkpoint | What is checked | Enforcing service |
-|---|---|---|---|
-| 1 | Pre-deployment model registration | Every model used by any sub-agent is registered in watsonx.governance with a factsheet, fairness metrics, and declared use-case scope before it can be bound to an agent. | watsonx.governance model registry |
-| 2 | Pre-execution policy check | Before dispatch, the policy engine checks whether the requested tool/agent combination is permitted for the tenant and jurisdiction. | watsonx.governance policy engine + IBM Sovereign Core |
-| 3 | Real-time output monitoring | Sub-agent outputs are sampled (10% default, 100% for high-risk task types) and checked for hallucination indicators, PII leakage, and toxicity. | watsonx.governance + IBM OpenPages |
-| 4 | Post-interaction drift detection | watsonx.governance compares the sub-agent's output distribution against its baseline; drift beyond threshold triggers alert and optional shadow-testing. | watsonx.governance drift monitor + IBM Instana |
-| 5 | Regulatory evidence collection | The complete record for regulated interaction types is exported to IBM OpenPages in a structured format aligned with GDPR Article 22, EU AI Act, and FDA 21 CFR Part 11 audit requirements. | IBM OpenPages + watsonx.governance |
-{: caption="Five governance checkpoints" caption-side="bottom"}
+---
 
+### 2. Hierarchical Orchestration Pattern
+{: #hierarchical-orchestration-pattern}
 
+Agents are organized in layers where higher-level agents plan and lower-level agents execute. Enables complex goal decomposition across multiple tiers of specialization. A central agent routes tasks to domain experts, who may themselves further decompose work to sub-specialists.
 
-## Architecture Decision Records
-{: #architecture-decision-records}
+![Hierarchical Orchestration Pattern](image/Hierarchical.png)
 
-Each decision was made after evaluating competing approaches against the IBM Cloud service landscape, target use cases, and governance requirements. Deviations are permitted but must be documented with equivalent rationale.
+#### Engineering considerations
 
-| Decision | Alternatives considered | Chosen | Rationale |
-|---|---|---|---|
-| **Orchestration engine** | LangGraph, AutoGen, CrewAI, custom-built on OpenShift | **watsonx Orchestrate** | GA product with an extensive connector catalogue, native watsonx.governance integration, IBM support SLAs, open MCP + A2A support, and an agentic control plane. LangGraph/CrewAI remain valid for sub-agent internals, registered as A2A collaborators — not as the supervisor. |
-| **Agent-to-tool protocol** | REST/HTTP, gRPC, LangChain tool format | **MCP** | Open standard for tool/data access: standardised schema, structured auth, server discovery. Supported natively by watsonx Orchestrate. |
-| **Agent-to-agent protocol** | Custom message bus, proprietary RPC | **A2A** | Open standard (Google → Linux Foundation) for agent collaboration and discovery via Agent Cards. Lets agents built by different teams/vendors interoperate without custom adapters. Supported by the watsonx Orchestrate ADK (1.15.0+), which implements A2A protocol version 0.3 for agent registration and operation. |
-| **Supervisor model** | Third-party GPT-class, Llama 4, Granite 4.x Instruct | **Granite 4.x reasoning ("thinking") variant** | Multi-step decomposition needs reasoning. Granite reasoning variants provide this without the cost/sovereignty concerns of third-party models. Falls back to Granite 4.x H-Small Instruct (32B/9B active). |
-| **Conversation state store** | Redis only, PostgreSQL, Cloudant | **Db2 (relational + vector)** | Row-level security for tenant isolation, vector column for semantic retrieval, governance-tooling integration. Redis retained as ephemeral working memory only. |
-| **Vector store** | Elasticsearch, pgvector, Pinecone | **Milvus via watsonx.data** | IBM-managed within watsonx.data: data-lineage tracking, access governance, Iceberg table support. No external SaaS dependency. |
-| **MCP/A2A server runtime** | AWS Lambda, Cloud Functions, bare VMs | **Red Hat OpenShift (IBM Cloud)** | Portability to hybrid environments, native mTLS via OpenShift Service Mesh, consistent deployment model with the watsonx platform. |
-| **Observability backend** | Datadog, Prometheus + Grafana, CloudWatch | **IBM Instana + OpenTelemetry** | IBM-owned, integrates with watsonx inference endpoints, and emits AI-semantic trace attributes (token counts, model version, agent ID). OpenTelemetry keeps it vendor-portable. |
-| **Governance audit store** | Elasticsearch, custom DB, S3-compatible | **watsonx.governance + IBM OpenPages** | Provides regulatory-grade evidence collection (GDPR, EU AI Act, FDA) alongside agentic evaluation. Competitors now provide agent observability, but IBM's regulatory-evidence depth via OpenPages remains differentiated. |
-{: caption="Architecture decision records" caption-side="bottom"}
+- **Best for:** complex, multi-domain problems requiring both strategic oversight and tactical execution.
 
+- **Cost/latency:** moderate token efficiency — some redundancy exists between tiers as context is re-summarized on the way up; latency is the sum of the slowest branch per tier.
 
+- **Compounding error:** apply the pⁿ reliability model per tier, not per agent — a 3-tier hierarchy with 92% per-tier fidelity still degrades to ~78% end-to-end.
 
-## Deployment Guide
-{: #deployment-guide}
+- **HITL gate:** place approval checkpoints at Tier 1 (final aggregation) for irreversible actions; Tier 2/3 remain autonomous for read-only analysis.
 
-### Terraform Module Structure
-{: #terraform-module-structure}
+---
 
-| Module | Layers | Resources provisioned |
-|---|---|---|
-| `ibm-ai-gateway` | L1 | API Connect instance, CIS load balancer, Redis on IBM Cloud Databases, IAM service IDs and keys |
-| `ibm-orchestrate-core` | L2 | watsonx Orchestrate instance, Db2 for state, supervisor configuration, fallback chain definitions |
-| `ibm-interop-plane` | L3 | OpenShift project for MCP servers, service mesh (mTLS), OAuth2 proxy, MCP server registry, A2A collaborator registry |
-| `ibm-sub-agents` | L4 | Sub-agent deployments on OpenShift, Granite 4.x model bindings on watsonx.ai, system prompt store in COS |
-| `ibm-agent-memory` | L5 | Db2 schema (conversations, semantic memory), Milvus collection in watsonx.data, Redis configuration |
-| `ibm-agent-observability` | L6 | Instana configuration, OpenTelemetry collector, alert policies, dashboards |
-| `ibm-agent-governance` | L7 | watsonx.governance registrations, policy rules, OpenPages integration, Sovereign Core policies |
-{: caption="Terraform module structure" caption-side="bottom"}
+### 3. Sequential Pipeline Pattern
+{: #sequential-pipeline-pattern}
 
-### Provisioning order
-{: #provisioning-order}
+Agents operate in a fixed pipeline where the output of one agent becomes the input of the next. Best for tasks with clear, ordered dependencies. This is the most deterministic and lowest-latency-variance multi-agent pattern because a predefined workflow agent — not an LLM — governs the transition between steps.
 
-1. `ibm-agent-governance` — IAM policies and governance foundation first
-2. `ibm-ai-gateway` — networking and authentication infrastructure
-3. `ibm-agent-memory` — data stores before services that write to them
-4. `ibm-interop-plane` — MCP/A2A infrastructure before sub-agents register
-5. `ibm-sub-agents` — after interop plane and memory are available
-6. `ibm-orchestrate-core` — supervisor after sub-agents are registered
-7. `ibm-agent-observability` — instrumentation last; services must exist to be instrumented
+![Sequential Pipeline Pattern](image/Sequential.png)
 
-### Environment Configuration
-{: #environment-configuration}
+#### Engineering considerations
 
-| Parameter | Development | Staging | Production |
-|---|---|---|---|
-| IBM API Connect plan | Lite | Standard | Enterprise |
-| Availability zones | 1 | 2 | 3 (MZR) |
-| Db2 plan | Developer | Standard | Enterprise with HA |
-| Redis plan | Standard | Standard | Standard HA |
-| Instana tier | Trial | SaaS Professional | SaaS Enterprise |
-| Governance enforcement | Advisory (log only) | Enforcing (block + log) | Enforcing (block + log + OpenPages) |
-| Sovereign Core enabled | No | No | Yes (regulated deployments) |
-{: caption="Environment configuration by stage" caption-side="bottom"}
+- **Advantage:** reduced latency and operational cost relative to LLM-orchestrated routing, since no model call is needed to decide "what runs next."
 
+- **Trade-off:** the rigid, predefined structure makes it difficult to adapt to dynamic conditions or skip unnecessary steps — an unneeded slow step still executes, which can inflate cumulative latency.
 
+- **Failure mode:** a hard stop. If the reviewer agent crashes, the editor never runs — pipelines need per-stage retries and dead-letter handling, not silent skips.
 
-## Anti-Pattern Library
-{: #anti-pattern-library}
+---
 
-| Anti-pattern | Consequence | Mitigation |
-|---|---|---|
-| Agent-to-agent direct calls (bypassing supervisor) | Undocumented communication paths that escape governance logging; impossible failure tracing; circular-dependency deadlocks. | All inter-agent communication routes through the supervisor; A2A collaborators are registered and scoped so sub-agents cannot call each other off-path. |
-| Monolithic supervisor with domain logic | Single point of failure and a governance audit nightmare; domain changes force re-testing the whole orchestration path. | Enforce the thin-supervisor principle: routing logic only in the supervisor prompt; domain knowledge in versioned sub-agent prompts. |
-| Stateless agent with no memory architecture | Each turn treated as new; no context, no preference recall; degraded UX. | Implement all four memory types (working, episodic, semantic, knowledge base) per Layer 5. Don't use context-window length as a substitute for memory architecture. |
-| Governance as an afterthought | Adding governance post-deployment leaves audit-trail gaps; regulatory exams require continuous evidence. | Provision `ibm-agent-governance` first. No sub-agent deploys without its model registered. Governance is an infrastructure requirement, not a feature. |
-| Shared MCP server across domains | Cross-domain data-leakage risk; access scope impossible to audit cleanly. | One MCP server per knowledge domain, each with its own service identity, IAM scope, and governance policy. Isolation at the server boundary. |
-| Cost blindness — no token budgeting | An unconstrained system with 6 sub-agents at 3 retries each can consume ~18× the expected token budget per interaction. | Token budgets at L1 (API Connect); per-agent token tracking in Instana; alert at >120% of budget; semantic caching to cut redundant inference. |
-{: caption="Anti-pattern library" caption-side="bottom"}
+### 4. Concurrent (Parallel Fan-Out / Gather) Pattern
+{: #concurrent-pattern}
 
+Multiple agents work on independent sub-tasks simultaneously and results are merged. Reduces latency for tasks that can be parallelized e.g., a primary agent spawning parallel reviewers to independently check a infrastructure deployment request for security, performance and cost before a gather step consolidates findings.
 
-## Summary and Key Takeaways
-{: #summary-and-key-takeaways}
+![Concurrent (Parallel Fan-Out / Gather) Pattern](image/Concurrent.png)
 
-This reference architecture defines a production-grade, seven-layer multi-agent orchestration pattern for IBM Cloud, comparable in depth to AWS Bedrock AgentCore and Azure AI Foundry Agent Service patterns, and differentiated on the dimensions that matter most to regulated-industry customers.
+#### Engineering considerations
 
-- **Lead with governance depth and sovereignty, not feature exclusivity.** Agent orchestration, observability, evaluation, and open-protocol (MCP + A2A) support are now table stakes across IBM, AWS, Azure, and Google. IBM's defensible edge is regulatory-grade evidence (watsonx.governance + OpenPages), runtime sovereignty (Sovereign Core), and the deepest hybrid/on-prem story (OpenShift).
-- **Governance is the architecture, not a feature.** Every layer produces governance records — the structural reason a regulated-industry CIO can approve this for production where a thinner pattern would need custom additions.
-- **MCP and A2A are complementary open standards.** MCP connects agents to tools and data; A2A connects agents to each other. This pattern uses both, and watsonx Orchestrate supports both — avoiding the lock-in of proprietary inter-agent protocols.
-- **The anti-pattern library is as important as the pattern.** The six anti-patterns are the most common production failure modes. Deviating without documented rationale is the most common cause of failure.
-- **Deploy governance first, agents second.** The roadmap provisions watsonx.governance before any sub-agent, creating an unbroken audit trail from day one. Retrofitting governance after go-live creates evidence gaps that cannot be filled retroactively.
+- **Advantage:** reduces overall wall-clock latency compared to sequential execution by gathering diverse information from multiple sources at the same time.
 
+- **Trade-off:** running multiple agents in parallel increases immediate resource utilization and token consumption (N× concurrent API calls), raising operational cost and rate-limit pressure; the gather step requires non-trivial logic to reconcile conflicting outputs.
+
+- **Failure mode:** partial results — unlike a sequential pipeline, some branches complete while others fail; design the gather step to degrade gracefully (report partial confidence) rather than block on 100% branch completion.
+
+---
+
+### 5. Loop (Evaluator-Optimizer) Pattern
+{: #loop-evaluator-optimizer-pattern}
+
+A producer agent generates output; a critic/evaluator agent scores it against defined criteria; feedback is passed back and the producer revises. The loop repeats until a quality threshold or maximum iteration count is reached.
+
+![Loop (Evaluator-Optimizer) Pattern](image/Loop.png)
+
+#### Engineering considerations
+
+- **Risk:** non-convergence. Always cap `max_iterations` and define an explicit, machine-checkable exit condition (score ≥ threshold OR iteration count reached) rather than relying on the critic's free-text judgment alone.
+
+- **Cost:** highest per-task token cost of any pattern that terminates in bounded time — each iteration re-sends growing context to both agents.
+
+---
+
+### 6. Group Chat / Collaborative Synthesis Pattern
+{: #group-chat-collaborative-pattern}
+
+Multiple agents with different perspectives or roles participate in a shared conversation thread, observed and optionally steered by a moderator (which may be a human, an agent, or both), converging on a consensus response.
+
+![Group Chat / Collaborative Synthesis Pattern](image/Collaborative.png)
+
+#### Engineering considerations
+
+- **Best for:** open-ended analysis, brainstorming, or scenarios requiring multiple expert perspectives where structure emerges dynamically.
+
+- **Trade-off:** lowest determinism of the deterministic-leaning patterns; risk of groupthink or unresolved conflicts if no moderator enforces a termination rule. Token cost is high — every turn is broadcast to all participants.
+
+- **HITL:** group chat is a natural place for a human observer role — read access to the thread without blocking agent turns, escalating only on unresolved disagreement.
+
+---
+
+### 7. Handoff (Peer-to-Peer) Pattern
+{: #handoff-peer-to-peer-pattern}
+
+Control passes explicitly from one specialist agent to another as context requirements change, with only one agent active at a time. Handoff orchestration is the canonical implementation, illustrated by a support scenario: triage agent → technical infrastructure agent → financial resolution agent → customer support, with each agent deciding when to redirect.
+
+![Handoff (Peer-to-Peer) Pattern](image/handoff.png)
+
+#### Engineering considerations
+
+- **Advantage:** dynamic specialization — one agent can identify the need for a specialist and forward the task, avoiding wasted compute on an ill-suited agent.
+
+- **Risk:** dropped context on transfer. Clear interfaces and an explicit state-transfer payload (not a free-text summary alone) are required so the receiving agent does not have to re-derive prior reasoning.
+
+- **Failure mode:** handoff loops — two agents repeatedly transferring the same task back and forth. Guard with a transfer counter and a forced escalation to a human or default agent after N transfers.
+
+---
+
+### 8. Magentic (Dynamic Manager) Orchestration Pattern
+{: #magentic-dynamic-manager-pattern}
+
+A manager agent maintains a live task-and-progress ledger, dynamically assigns and reprioritizes sub-tasks across specialist agents, and loops until the goal is evaluated as complete. Derived from Microsoft Research's MagenticOne system, this is the least deterministic pattern in either vendor's catalog, designed specifically for open-ended problems that do not have a predetermined plan of approach.
+
+![Magentic (Dynamic Manager) Orchestration Pattern](image/Manager.png)
+
+<:note> ARCHITECTURAL GUIDANCE — use with caution
+
+ Consistent with a preference for structured, predictable workflows: Magentic orchestration should be reserved for problems that genuinely resist upfront decomposition. It is the most powerful pattern and the easiest to misuse — latency is unbounded and hard to predict, token cost is the highest of any pattern (the manager re-plans on every loop), and the primary production risk is a runaway planning loop that silently exhausts budget. If a Sequential or Hierarchical pipeline can be reasoned about and debugged, it is worth more in production than a Magentic workflow with unpredictable token burn.
+
+#### Mandatory guardrails when Magentic is used
+
+- Hard ceiling on manager re-planning iterations and total tool-call budget per session.
+- HITL authorization gate before any tool call that performs a write, delete, or financial action (see Governance section below).
+- Real-time cost/latency dashboards with automatic circuit-breaker cutoff on budget or time overrun.
+
+---
+
+### 9. Custom Logic / Conditional Routing Pattern
+{: #custom-logic-conditional-routing-pattern}
+
+Workflow routing is driven by conditional rules or business logic rather than a fixed topology or an LLM-driven decision. Allows dynamic branching based on intermediate results while remaining fully deterministic and auditable — the routing function is ordinary code, not a model call.
+
+![Custom Logic / Conditional Routing Pattern](image/Conditional.png)
+
+#### Cross-reference
+
+- **Google ADK:** custom Python routing logic layered over `sub_agents`, bypassing AutoFlow's LLM-driven transfer in favor of deterministic if/else branching on structured intermediate output.
+- **Azure:** equivalent to workflow-as-code implementations (e.g., Durable Functions / Logic Apps fan-out) driving agent invocation based on business rules rather than model-generated routing.
+
+#### Engineering considerations
+
+- Highest auditability of any dynamic-branching pattern — every route is testable with standard unit tests, independent of LLM non-determinism.
+- **Risk is rule drift:** as business logic evolves, untested branches accumulate. Treat the routing function itself as production code under the same CI/CD gates as the agents it invokes.
+
+---
+
+### 10. Human-in-the-Loop (HITL) Gate Pattern
+{: #human-in-the-loop-pattern}
+
+A human review or approval step is embedded at defined points in the workflow. Critical for high-stakes decisions where full autonomy is not acceptable.
+
+![Human-in-the-Loop (HITL) Gate Pattern](image/hitl.png)
+
+#### Design decisions for every HITL gate
+
+- **Mandatory vs. optional:** a mandatory gate makes the orchestration synchronous at that step — persist state at the checkpoint so the workflow can resume without replaying prior agent work.
+
+- **Approval vs. feedback:** decide whether the human response simply advances the workflow (approval) or loops back to the agent for revision (feedback, converging with the Loop pattern above).
+
+- **Scope:** gate specific tool invocations rather than entire agent turns, so the orchestration proceeds autonomously for low-risk actions (read-only queries) and only blocks on sensitive operations (writes, deletes, financial transactions, external communications).
+
+#### Common implementation mistake
+
+Creating unnecessary coordination complexity by using a Group Chat or Magentic pattern when a basic Sequential or Concurrent pattern with a single HITL gate would satisfy the requirement. Escalate topology complexity only after confirming the simpler pattern cannot express the required branching.
+
+---
+
+## Multi-Agent Orchestration Implementation
+{: #multi-agent-orchestration-implementation}
+
+Multi-Agent Orchestration implementation involves:
+
+- **Local Agent to Agent workflows:** can be implemented using LangGraph, a graph-based orchestration framework where agents are nodes and transitions are edges. Supports stateful, cyclical workflows with fine-grained control over agent sequencing and memory.
+
+- **External / Partner Agents:** communicate using A2A, ACP and MCP standardized protocols that allow agents built on different frameworks or hosted by different organizations to discover, authenticate, and exchange tasks with each other securely.
+
+### Frameworks
+{: #multi-agent-frameworks}
+
+- **Local workflows:** Langgraph, Crew AI
+- **Agent Communication Protocol (ACP):** Developed by IBM Research. An open protocol for agent-to-agent communication within and across enterprise environments, with support for asynchronous messaging and structured task handoff.
+- **A2A Protocol:** Housed by the Linux Foundation and contributed by Google. Designed for cross-organization agent interoperability, enabling agents to collaborate across company and platform boundaries.
+- **Model Context Protocol (MCP):** Provides the tool and resource connectivity layer; MCP Servers expose capabilities that any participating agent can discover and invoke, regardless of the orchestration framework in use.
+- **Google Agent Development Kit (ADK):** Open-source framework providing native Sequential, Parallel, and Loop workflow agents, plus LLM-driven delegation via AutoFlow — the reference implementation for the patterns detailed above.
+- **Microsoft Agent Framework:** Azure's 2025 open-source successor unifying AutoGen's orchestration with Semantic Kernel's enterprise foundations; provides native Sequential, Concurrent, Handoff, Group Chat, and Magentic orchestration across Python and .NET.
+
+---
+
+## Agentic AI Governance
+{: #agentic-ai-governance}
+
+### Technical Safeguards
+{: #technical-safeguards}
+
+- **Interruptability:** the ability to "turn an agent off." An emergency stop mechanism. User can always activate a graceful shutdown procedure for its agent at any time: both for halting a specific category of actions (revoking access to, e.g., financial credentials) and for terminating the agent's operation more generally. In practice this means every agent must expose a cancellation interface and respect a kill signal within a defined response window.
+
+- **Guardrails:** Agent behavior limits, Role-Based Access Control (RBAC), Prompt filtering, output constraints. Guardrails are enforced at two layers: input guardrails that validate and sanitize what enters the agent, and output guardrails that inspect responses before they are returned. They prevent prompt injection, data leakage, and out-of-scope actions.
+
+- **Testing & Monitoring:** Hallucination detection, compliance checks (feature drift, model drift). Agents must be tested beyond functional correctness; evaluation should include adversarial prompts, boundary condition testing, and red-teaming for misuse scenarios. In production, continuous monitoring tracks behavioral drift over time.
+
+- **Human-in-the-Loop:** Oversight for critical decisions. Defines the threshold at which an agent must pause and escalate to a human before proceeding. The threshold should be risk-calibrated: financial transactions above a limit, irreversible actions, or low-confidence decisions all warrant a human checkpoint.
+
+- **Confidential Data:** Encryption, access control, anonymization. Agents must enforce data minimization by only accessing the data needed for the task. PII and sensitive data should be anonymized before entering the agent context, and all data in transit and at rest must be encrypted.
+
+### Process Controls & Structures
+{: #process-controls-structures}
+
+- **Risk-Based Actions:** Define non-autonomous boundaries. Not every action should be fully delegated to an agent. Actions are classified by risk level: read-only operations may be fully autonomous, while write, delete, or financial actions require human approval or a secondary confirmation step.
+
+- **Auditability:** Full traceability of agent decisions. Every decision, tool call, and data access made by an agent must be logged with sufficient detail to reconstruct the reasoning chain. Audit logs should capture: input received, reasoning steps, tools invoked, outputs produced, and the identity of the agent and user.
+
+- **Monitoring:** Real-time observability across layers. Spans the orchestration layer, individual agents, and tool calls. Key signals include latency, token consumption, error rates, tool call frequency, and output confidence scores. Anomaly detection should trigger alerts when behavior deviates from baseline.
+
+- **Accountability:** Clear ownership of models, agents, and orchestration. Each agent in a system must have a designated owner responsible for its behavior, performance, and compliance. Ownership maps to: the model version in use, the system prompt, the tools it can access, and the data it touches.
+
+### Deployment Governance
+{: #deployment-governance}
+
+- **Models:** Versioning, performance tracking (hyperparameter optimization). Model versions must be pinned in deployment. Agents should never silently pick up a new model version. Performance baselines are established at release and tracked continuously; regression in accuracy, latency, or safety metrics triggers a rollback.
+
+- **Agent Orchestration:** Guardrails on autonomy. The orchestration layer enforces scope boundaries at runtime. Agents cannot exceed the permissions defined in their deployment configuration. Tool access, data scope, and action types are all constrained by policy, not just by prompt instruction.
+
+- **Security:** Authentication, sandboxing, rate limits. Each agent operates in an isolated execution environment (sandbox) to prevent lateral movement in case of compromise. All tool calls require authenticated service identities. Rate limits prevent runaway agents from exhausting resources or triggering downstream systems unexpectedly.
+
+- **Observability:** Dashboards, alerts, anomaly detection. A unified observability stack covers all agents in the system, not just infrastructure metrics but agent-level behavioral telemetry. Dashboards should surface decision traces, tool call patterns, and confidence distributions alongside standard SRE signals.
+
+Deployment Governance should be part of CI/CD automation during the development of agents. This means governance checks — safety tests, guardrail validation, permission audits, and performance regression tests — are executed as automated gates in the pipeline before any agent reaches production. No agent should be deployable without passing its governance baseline.
 
 ## References
 {: #references}
