@@ -172,6 +172,7 @@ Agents operate in a fixed pipeline where the output of one agent becomes the inp
 
 ![Sequential Pipeline Pattern](image/Sequential.png){: caption="Figure 4. Sequential Pipeline Pattern" caption-side="bottom"}
 
+
 #### Engineering considerations
 {: #sequential-engineering}
 
@@ -181,7 +182,6 @@ Agents operate in a fixed pipeline where the output of one agent becomes the inp
 
 - **Failure mode:** a hard stop. If the reviewer agent crashes, the editor never runs — pipelines need per-stage retries and dead-letter handling, not silent skips.
 
----
 
 ### 4. Concurrent (Parallel Fan-Out / Gather) Pattern
 {: #concurrent-pattern}
@@ -189,6 +189,7 @@ Agents operate in a fixed pipeline where the output of one agent becomes the inp
 Multiple agents work on independent sub-tasks simultaneously and results are merged. Reduces latency for tasks that can be parallelized e.g., a primary agent spawning parallel reviewers to independently check a infrastructure deployment request for security, performance and cost before a gather step consolidates findings.
 
 ![Concurrent (Parallel Fan-Out / Gather) Pattern](image/Concurrent.png){: caption="Figure 5. Concurrent (Parallel Fan-Out / Gather) Pattern" caption-side="bottom"}
+
 
 #### Engineering considerations
 {: #concurrent-engineering}
@@ -207,6 +208,7 @@ Multiple agents work on independent sub-tasks simultaneously and results are mer
 A producer agent generates output; a critic/evaluator agent scores it against defined criteria; feedback is passed back and the producer revises. The loop repeats until a quality threshold or maximum iteration count is reached.
 
 ![Loop (Evaluator-Optimizer) Pattern](image/Loop.png){: caption="Figure 6. Loop (Evaluator-Optimizer) Pattern" caption-side="bottom"}
+
 
 #### Engineering considerations
 {: #loop-engineering}
