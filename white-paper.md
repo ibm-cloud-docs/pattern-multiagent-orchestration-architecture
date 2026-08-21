@@ -21,7 +21,7 @@ subcollection: pattern-multiagent-orchestration-architecture
 A short description of what your white paper is about and what the reader will learn.
 {: shortdesc}
 
-This reference architecture provides a production-ready blueprint for building enterprise-grade multi-agent systems on IBM Cloud, leveraging watsonx Orchestrate for orchestration, open protocols (MCP and A2A) for interoperability, and watsonx.governance for regulatory-grade audit trails. The pattern addresses the complete lifecycle from API gateway through governance, defining seven architectural layers with clear separation of concerns, IBM Cloud service mappings, and anti-patterns to avoid. It is designed for regulated industries requiring sovereignty controls, hybrid deployment flexibility, and continuous compliance evidence collection.
+This paper outlines design patterns, implementation approaches, and governance controls for building enterprise-grade multi-agent systems on IBM Cloud. It explains how watsonx Orchestrate, open protocols such as MCP and A2A, and watsonx.governance can be combined to support interoperable, auditable, and production-ready agentic systems. The guidance is aimed at organizations that need strong governance, hybrid deployment flexibility, and operational control.
 
 
 ## Pattern overview
@@ -29,36 +29,17 @@ This reference architecture provides a production-ready blueprint for building e
 
 This reference architecture defines the design, deployment, and operational patterns for building production-grade multi-agent systems on IBM Cloud using watsonx Orchestrate as the orchestration plane, MCP for tool and data integration, and A2A for agent-to-agent collaboration. It covers supervisor/sub-agent hierarchies, persistent agent memory, MCP/A2A topology, governance wiring, and observability.
 
-## Pattern components
-{: #pattern-components}
-
-| Element | Selection |
-|---|---|
-| Orchestration engine | watsonx Orchestrate |
-| Agent-to-tool protocol | Model Context Protocol (MCP) |
-| Agent-to-agent protocol | Agent-to-Agent (A2A) — originated by Google, governed by the Linux Foundation |
-| Governance layer | watsonx.governance (model + agentic governance) |
-| Observability | IBM Instana + OpenTelemetry |
-{: figure-caption="Pattern overview components" caption-side="bottom"}
-
-
 
 
 ## Executive Summary
 {: #executive-summary}
 
-Enterprise AI has crossed the threshold from single-model inference to coordinated networks of autonomous agents. IBM's watsonx Orchestrate — generally available with a large catalogue of enterprise connectors and prebuilt agents — combined with the open Model Context Protocol (MCP) and the open Agent-to-Agent (A2A) protocol, provides a technical foundation for production-grade multi-agent systems. This document defines a seven-layer reference architecture — from user interface through to governance audit trails.
+Enterprise AI is moving from single-agent use cases to coordinated systems of specialized agents. This paper focuses on the design patterns, implementation approaches, and governance controls needed to build production-grade multi-agent systems on IBM Cloud. It explains when to use single-agent versus multi-agent approaches, compares common multi-agent orchestration patterns, and highlights the trade-offs between determinism, latency, token cost, and operational risk.
 
-IBM's differentiator in this space is **not** orchestration capability alone, and — importantly — it is no longer that agent auditing exists *only* on IBM. All three major hyperscalers now provide agent observability and tracing. IBM's defensible advantage is the **depth and regulatory grade of its governance**: watsonx.governance factsheets, agentic evaluation metrics, the Governance Graph, and the Risk Atlas, wired into IBM OpenPages for regulator-ready evidence, plus a sovereignty story (IBM Sovereign Core) and a genuinely hybrid/on-prem deployment model (Red Hat OpenShift). This pattern makes those differentiators architecturally concrete.
+The paper positions watsonx Orchestrate as the multi-agent control plane, with MCP for agent-to-tool connectivity and A2A for agent-to-agent interoperability. It also reviews implementation options across open frameworks and protocols, including LangGraph, Crew AI, ACP, Google ADK, and the Microsoft Agent Framework, showing how these can participate in a broader enterprise orchestration model rather than replace the control plane.
 
-- Architecture Decision: This pattern uses watsonx Orchestrate as the multi-agent control plane over custom-built orchestration because it is production-ready, provides an extensive enterprise connector catalogue, watsonx Orchestrate supports MCP for tool integration and provides a built‑in collaborator‑agent framework that can be extended to interoperate with external agents via custom adapters and integrates natively with watsonx.governance for agent audit and evaluation. Custom frameworks (LangGraph, AutoGen, CrewAI) remain valid for specific sub-agent implementations and can be registered as A2A collaborators or exposed via MCP — not as replacement orchestrators.
+A core theme of the paper is that enterprise success depends not only on orchestration, but on governance. The document therefore emphasizes technical safeguards, human-in-the-loop checkpoints, auditability, monitoring, confidentiality controls, and deployment governance. IBM's differentiated value is reflected in the strength of its governance and hybrid deployment story — particularly watsonx.governance, OpenPages, IBM Sovereign Core, and Red Hat OpenShift — for organizations that need traceability, policy enforcement, and regulatory readiness.
 
-## AGENTIC AI DESIGN PATTERNS
-{: #agentic-ai-design-patterns}
-
-Agentic AI design patterns are identified as a Single Agent or Multi-Agent approach to accomplish a goal. Multi-agent architectures trade the simplicity of a single reasoning loop for specialization, parallelism, and fault isolation — at the cost of coordination overhead, additional token spend, and compounding error probability across agent-to-agent hops. The pattern selected should be the least complex one that still meets the task's accuracy, latency, and auditability requirements.
-
----
 
 ## What is a single agent design pattern
 {: #single-agent-design}
@@ -83,7 +64,7 @@ Mainly used for querying and performing multiple steps to accomplish the task.
 A system design that takes you through all the aspects of a single-agent solution.
 
 ![Single Agent Design Pattern](image/single-agent.png)
-{: figure-caption="Figure 1. Single Agent Design Pattern" caption-side="bottom"}
+{: caption="Figure 1. Single Agent Design Pattern" caption-side="bottom"}
 
 High level system context with tools and services. A single-agent architecture is composed of four core layers:
 
@@ -139,7 +120,7 @@ Every additional agent-to-agent hop introduces an independent probability of fai
 | Magentic (Dynamic Manager) | Low | Unbounded / hard to predict | Very High | Runaway planning loops, cost overrun |
 | Custom Logic / Conditional Routing | High | Variable (rule-driven) | Low–Medium | Rule drift / untested branches |
 | Human-in-the-Loop Gate | Very High (at gate) | Adds wait time | Low (gate itself) | Approval bottleneck / alert fatigue |
-{: figure-caption="Table 1. Multi-agent pattern comparison" caption-side="bottom"}
+{: caption="Table 1. Multi-agent pattern comparison" caption-side="bottom"}
 
 ---
 
@@ -152,7 +133,7 @@ Every additional agent-to-agent hop introduces an independent probability of fai
 A central agent receives the goal, decomposes it into sub-tasks, and delegates each to a specialized agent. It aggregates results and resolves conflicts before returning a final output. This is the multi-agent analogue of an API gateway: one entry point, many backend specialists.
 
 ![Coordinator / Dispatcher Pattern](image/coordinator.png)
-{: figure-caption="Figure 2. Coordinator / Dispatcher Pattern" caption-side="bottom"}
+{: caption="Figure 2. Coordinator / Dispatcher Pattern" caption-side="bottom"}
 
 #### Engineering considerations
 {: #coordinator-engineering}
@@ -171,7 +152,7 @@ A central agent receives the goal, decomposes it into sub-tasks, and delegates e
 Agents are organized in layers where higher-level agents plan and lower-level agents execute. Enables complex goal decomposition across multiple tiers of specialization. A central agent routes tasks to domain experts, who may themselves further decompose work to sub-specialists.
 
 ![Hierarchical Orchestration Pattern](image/Hierarchical.png)
-{: figure-caption="Figure 3. Hierarchical Orchestration Pattern" caption-side="bottom"}
+{: caption="Figure 3. Hierarchical Orchestration Pattern" caption-side="bottom"}
 
 #### Engineering considerations
 {: #hierarchical-engineering}
@@ -192,7 +173,7 @@ Agents are organized in layers where higher-level agents plan and lower-level ag
 Agents operate in a fixed pipeline where the output of one agent becomes the input of the next. Best for tasks with clear, ordered dependencies. This is the most deterministic and lowest-latency-variance multi-agent pattern because a predefined workflow agent — not an LLM — governs the transition between steps.
 
 ![Sequential Pipeline Pattern](image/Sequential.png)
-{: figure-caption="Figure 4. Sequential Pipeline Pattern" caption-side="bottom"}
+{: caption="Figure 4. Sequential Pipeline Pattern" caption-side="bottom"}
 
 #### Engineering considerations
 {: #sequential-engineering}
@@ -211,7 +192,7 @@ Agents operate in a fixed pipeline where the output of one agent becomes the inp
 Multiple agents work on independent sub-tasks simultaneously and results are merged. Reduces latency for tasks that can be parallelized e.g., a primary agent spawning parallel reviewers to independently check a infrastructure deployment request for security, performance and cost before a gather step consolidates findings.
 
 ![Concurrent (Parallel Fan-Out / Gather) Pattern](image/Concurrent.png)
-{: figure-caption="Figure 5. Concurrent (Parallel Fan-Out / Gather) Pattern" caption-side="bottom"}
+{: caption="Figure 5. Concurrent (Parallel Fan-Out / Gather) Pattern" caption-side="bottom"}
 
 #### Engineering considerations
 {: #concurrent-engineering}
@@ -230,7 +211,7 @@ Multiple agents work on independent sub-tasks simultaneously and results are mer
 A producer agent generates output; a critic/evaluator agent scores it against defined criteria; feedback is passed back and the producer revises. The loop repeats until a quality threshold or maximum iteration count is reached.
 
 ![Loop (Evaluator-Optimizer) Pattern](image/Loop.png)
-{: figure-caption="Figure 6. Loop (Evaluator-Optimizer) Pattern" caption-side="bottom"}
+{: caption="Figure 6. Loop (Evaluator-Optimizer) Pattern" caption-side="bottom"}
 
 #### Engineering considerations
 {: #loop-engineering}
@@ -247,7 +228,7 @@ A producer agent generates output; a critic/evaluator agent scores it against de
 Multiple agents with different perspectives or roles participate in a shared conversation thread, observed and optionally steered by a moderator (which may be a human, an agent, or both), converging on a consensus response.
 
 ![Group Chat / Collaborative Synthesis Pattern](image/Collaborative.png)
-{: figure-caption="Figure 7. Group Chat / Collaborative Synthesis Pattern" caption-side="bottom"}
+{: caption="Figure 7. Group Chat / Collaborative Synthesis Pattern" caption-side="bottom"}
 
 #### Engineering considerations
 {: #group-chat-engineering}
@@ -266,7 +247,7 @@ Multiple agents with different perspectives or roles participate in a shared con
 Control passes explicitly from one specialist agent to another as context requirements change, with only one agent active at a time. Handoff orchestration is the canonical implementation, illustrated by a support scenario: triage agent → technical infrastructure agent → financial resolution agent → customer support, with each agent deciding when to redirect.
 
 ![Handoff (Peer-to-Peer) Pattern](image/handoff.png)
-{: figure-caption="Figure 8. Handoff (Peer-to-Peer) Pattern" caption-side="bottom"}
+{: caption="Figure 8. Handoff (Peer-to-Peer) Pattern" caption-side="bottom"}
 
 #### Engineering considerations
 {: #handoff-engineering}
@@ -285,7 +266,7 @@ Control passes explicitly from one specialist agent to another as context requir
 A manager agent maintains a live task-and-progress ledger, dynamically assigns and reprioritizes sub-tasks across specialist agents, and loops until the goal is evaluated as complete. Derived from Microsoft Research's MagenticOne system, this is the least deterministic pattern in either vendor's catalog, designed specifically for open-ended problems that do not have a predetermined plan of approach.
 
 ![Magentic (Dynamic Manager) Orchestration Pattern](image/Manager.png)
-{: figure-caption="Figure 9. Magentic (Dynamic Manager) Orchestration Pattern" caption-side="bottom"}
+{: caption="Figure 9. Magentic (Dynamic Manager) Orchestration Pattern" caption-side="bottom"}
 
 <:note> ARCHITECTURAL GUIDANCE — use with caution
 
@@ -306,7 +287,7 @@ A manager agent maintains a live task-and-progress ledger, dynamically assigns a
 Workflow routing is driven by conditional rules or business logic rather than a fixed topology or an LLM-driven decision. Allows dynamic branching based on intermediate results while remaining fully deterministic and auditable — the routing function is ordinary code, not a model call.
 
 ![Custom Logic / Conditional Routing Pattern](image/Conditional.png)
-{: figure-caption="Figure 10. Custom Logic / Conditional Routing Pattern" caption-side="bottom"}
+{: caption="Figure 10. Custom Logic / Conditional Routing Pattern" caption-side="bottom"}
 
 #### Cross-reference
 {: #custom-logic-cross-reference}
@@ -328,7 +309,7 @@ Workflow routing is driven by conditional rules or business logic rather than a 
 A human review or approval step is embedded at defined points in the workflow. Critical for high-stakes decisions where full autonomy is not acceptable.
 
 ![Human-in-the-Loop (HITL) Gate Pattern](image/hitl.png)
-{: figure-caption="Figure 11. Human-in-the-Loop (HITL) Gate Pattern" caption-side="bottom"}
+{: caption="Figure 11. Human-in-the-Loop (HITL) Gate Pattern" caption-side="bottom"}
 
 #### Design decisions for every HITL gate
 {: #hitl-design-decisions}
@@ -418,9 +399,6 @@ The following sources support the product capabilities, protocol specifications,
 - [IBM watsonx Orchestrate — Multi-agent orchestration](https://www.ibm.com/products/watsonx-orchestrate/multi-agent-orchestration) — Supervisor/router/planner model, agent styles (ReAct, Plan-Act, deterministic), and AI Gateway model selection.
 - [IBM watsonx Orchestrate — AI Agent Builder](https://www.ibm.com/products/watsonx-orchestrate/ai-agent-builder) — No-code/low-code/pro-code build paths and AI Gateway provider choice (Granite, OpenAI, Anthropic, Google Gemini, Mistral, Ollama).
 - [watsonx Orchestrate Agent Development Kit (ADK) — Developer documentation](https://developer.watson-orchestrate.ibm.com/) — ADK reference, Developer Edition, and protocol support.
-- [watsonx Orchestrate ADK 1.15.0 release notes](https://developer.watson-orchestrate.ibm.com/_releases/1.15.0/release/release) — Confirms ADK support for **A2A protocol version 0.3** (versions 0.2/0.2.1 deprecated).
-- [watsonx Orchestrate ADK — Managing LLMs via AI Gateway](https://developer.watson-orchestrate.ibm.com/llm/managing_llm) — Supported AI Gateway providers and routing/fallback configuration.
-- [IBM watsonx Orchestrate ADK — GitHub repository](https://github.com/IBM/ibm-watsonx-orchestrate-adk) — Source, CLI, and Python library.
 
 ### Open protocols (MCP & A2A)
 {: #open-protocols-mcp-a2a}
@@ -440,15 +418,7 @@ The following sources support the product capabilities, protocol specifications,
 ### Governance, sovereignty & observability
 {: #governance-sovereignty-observability}
 
-- [IBM Sovereign Core reaches general availability — IBM Newsroom (Think 2026)](https://newsroom.ibm.com/2026-05-05-think-2026-ibm-makes-digital-sovereignty-operational-with-general-availability-of-ibm-sovereign-core) — GA announcement (5 May 2026); four sovereignty pillars and runtime enforcement.
 - [IBM watsonx.governance](https://www.ibm.com/products/watsonx-governance) — Factsheets, agentic evaluation metrics, Governance Graph, and Risk Atlas.
 - [IBM OpenPages](https://www.ibm.com/products/openpages) — Risk and regulatory-compliance evidence management.
 - [IBM Instana Observability](https://www.ibm.com/products/instana) — End-to-end distributed tracing for agent workloads.
 - [OpenTelemetry](https://opentelemetry.io/) — Vendor-neutral trace/metric/log instrumentation standard.
-
-### IBM Cloud platform services
-{: #ibm-cloud-platform-services}
-
-- [IBM API Connect](https://www.ibm.com/products/api-connect) — API gateway, rate limiting, and policy enforcement (L1).
-- [IBM watsonx.data](https://www.ibm.com/products/watsonx-data) — Lakehouse with integrated Milvus vector store (L5 knowledge base).
-- [Red Hat OpenShift on IBM Cloud](https://www.ibm.com/products/openshift) — Hybrid runtime for MCP/A2A servers and sub-agents (L3/L4).
