@@ -64,6 +64,7 @@ Mainly used for querying and performing multiple steps to accomplish the task.
 A system design that takes you through all the aspects of a single-agent solution.
 
 ![Single Agent Design Pattern](image/single-agent.png)
+
 {: caption="Figure 1. Single Agent Design Pattern" caption-side="bottom"}
 
 High level system context with tools and services. A single-agent architecture is composed of four core layers:
@@ -133,6 +134,7 @@ Every additional agent-to-agent hop introduces an independent probability of fai
 A central agent receives the goal, decomposes it into sub-tasks, and delegates each to a specialized agent. It aggregates results and resolves conflicts before returning a final output. This is the multi-agent analogue of an API gateway: one entry point, many backend specialists.
 
 ![Coordinator / Dispatcher Pattern](image/coordinator.png)
+
 {: caption="Figure 2. Coordinator / Dispatcher Pattern" caption-side="bottom"}
 
 #### Engineering considerations
@@ -152,6 +154,7 @@ A central agent receives the goal, decomposes it into sub-tasks, and delegates e
 Agents are organized in layers where higher-level agents plan and lower-level agents execute. Enables complex goal decomposition across multiple tiers of specialization. A central agent routes tasks to domain experts, who may themselves further decompose work to sub-specialists.
 
 ![Hierarchical Orchestration Pattern](image/Hierarchical.png)
+
 {: caption="Figure 3. Hierarchical Orchestration Pattern" caption-side="bottom"}
 
 #### Engineering considerations
@@ -173,6 +176,7 @@ Agents are organized in layers where higher-level agents plan and lower-level ag
 Agents operate in a fixed pipeline where the output of one agent becomes the input of the next. Best for tasks with clear, ordered dependencies. This is the most deterministic and lowest-latency-variance multi-agent pattern because a predefined workflow agent — not an LLM — governs the transition between steps.
 
 ![Sequential Pipeline Pattern](image/Sequential.png)
+
 {: caption="Figure 4. Sequential Pipeline Pattern" caption-side="bottom"}
 
 #### Engineering considerations
@@ -192,6 +196,7 @@ Agents operate in a fixed pipeline where the output of one agent becomes the inp
 Multiple agents work on independent sub-tasks simultaneously and results are merged. Reduces latency for tasks that can be parallelized e.g., a primary agent spawning parallel reviewers to independently check a infrastructure deployment request for security, performance and cost before a gather step consolidates findings.
 
 ![Concurrent (Parallel Fan-Out / Gather) Pattern](image/Concurrent.png)
+
 {: caption="Figure 5. Concurrent (Parallel Fan-Out / Gather) Pattern" caption-side="bottom"}
 
 #### Engineering considerations
@@ -211,6 +216,7 @@ Multiple agents work on independent sub-tasks simultaneously and results are mer
 A producer agent generates output; a critic/evaluator agent scores it against defined criteria; feedback is passed back and the producer revises. The loop repeats until a quality threshold or maximum iteration count is reached.
 
 ![Loop (Evaluator-Optimizer) Pattern](image/Loop.png)
+
 {: caption="Figure 6. Loop (Evaluator-Optimizer) Pattern" caption-side="bottom"}
 
 #### Engineering considerations
@@ -228,6 +234,7 @@ A producer agent generates output; a critic/evaluator agent scores it against de
 Multiple agents with different perspectives or roles participate in a shared conversation thread, observed and optionally steered by a moderator (which may be a human, an agent, or both), converging on a consensus response.
 
 ![Group Chat / Collaborative Synthesis Pattern](image/Collaborative.png)
+
 {: caption="Figure 7. Group Chat / Collaborative Synthesis Pattern" caption-side="bottom"}
 
 #### Engineering considerations
@@ -247,6 +254,7 @@ Multiple agents with different perspectives or roles participate in a shared con
 Control passes explicitly from one specialist agent to another as context requirements change, with only one agent active at a time. Handoff orchestration is the canonical implementation, illustrated by a support scenario: triage agent → technical infrastructure agent → financial resolution agent → customer support, with each agent deciding when to redirect.
 
 ![Handoff (Peer-to-Peer) Pattern](image/handoff.png)
+
 {: caption="Figure 8. Handoff (Peer-to-Peer) Pattern" caption-side="bottom"}
 
 #### Engineering considerations
@@ -266,6 +274,7 @@ Control passes explicitly from one specialist agent to another as context requir
 A manager agent maintains a live task-and-progress ledger, dynamically assigns and reprioritizes sub-tasks across specialist agents, and loops until the goal is evaluated as complete. Derived from Microsoft Research's MagenticOne system, this is the least deterministic pattern in either vendor's catalog, designed specifically for open-ended problems that do not have a predetermined plan of approach.
 
 ![Magentic (Dynamic Manager) Orchestration Pattern](image/Manager.png)
+
 {: caption="Figure 9. Magentic (Dynamic Manager) Orchestration Pattern" caption-side="bottom"}
 
 <:note> ARCHITECTURAL GUIDANCE — use with caution
@@ -287,6 +296,7 @@ A manager agent maintains a live task-and-progress ledger, dynamically assigns a
 Workflow routing is driven by conditional rules or business logic rather than a fixed topology or an LLM-driven decision. Allows dynamic branching based on intermediate results while remaining fully deterministic and auditable — the routing function is ordinary code, not a model call.
 
 ![Custom Logic / Conditional Routing Pattern](image/Conditional.png)
+
 {: caption="Figure 10. Custom Logic / Conditional Routing Pattern" caption-side="bottom"}
 
 #### Cross-reference
@@ -309,6 +319,7 @@ Workflow routing is driven by conditional rules or business logic rather than a 
 A human review or approval step is embedded at defined points in the workflow. Critical for high-stakes decisions where full autonomy is not acceptable.
 
 ![Human-in-the-Loop (HITL) Gate Pattern](image/hitl.png)
+
 {: caption="Figure 11. Human-in-the-Loop (HITL) Gate Pattern" caption-side="bottom"}
 
 #### Design decisions for every HITL gate
