@@ -63,9 +63,8 @@ Mainly used for querying and performing multiple steps to accomplish the task.
 
 A system design that takes you through all the aspects of a single-agent solution.
 
-![Single Agent Design Pattern](image/single-agent.png)
+![Single Agent Design Pattern](image/single-agent.png){: caption="Figure 1. Single Agent Design Pattern" caption-side="bottom"}
 
-{: caption="Figure 1. Single Agent Design Pattern" caption-side="bottom"}
 
 High level system context with tools and services. A single-agent architecture is composed of four core layers:
 
@@ -133,9 +132,7 @@ Every additional agent-to-agent hop introduces an independent probability of fai
 
 A central agent receives the goal, decomposes it into sub-tasks, and delegates each to a specialized agent. It aggregates results and resolves conflicts before returning a final output. This is the multi-agent analogue of an API gateway: one entry point, many backend specialists.
 
-![Coordinator / Dispatcher Pattern](image/coordinator.png)
-
-{: caption="Figure 2. Coordinator / Dispatcher Pattern" caption-side="bottom"}
+![Coordinator / Dispatcher Pattern](image/coordinator.png){: caption="Figure 2. Coordinator / Dispatcher Pattern" caption-side="bottom"}
 
 #### Engineering considerations
 {: #coordinator-engineering}
@@ -153,9 +150,7 @@ A central agent receives the goal, decomposes it into sub-tasks, and delegates e
 
 Agents are organized in layers where higher-level agents plan and lower-level agents execute. Enables complex goal decomposition across multiple tiers of specialization. A central agent routes tasks to domain experts, who may themselves further decompose work to sub-specialists.
 
-![Hierarchical Orchestration Pattern](image/Hierarchical.png)
-
-{: caption="Figure 3. Hierarchical Orchestration Pattern" caption-side="bottom"}
+![Hierarchical Orchestration Pattern](image/Hierarchical.png){: caption="Figure 3. Hierarchical Orchestration Pattern" caption-side="bottom"}
 
 #### Engineering considerations
 {: #hierarchical-engineering}
