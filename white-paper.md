@@ -2,7 +2,7 @@
 
 copyright:
   years: 2026
-lastupdated: "2026-08-21"
+lastupdated: "2026-09-23"
 
 keywords: multi-agent systems, watsonx orchestrate, agent orchestration, mcp, a2a, watsonx governance, agentic ai, enterprise ai, reference architecture
 
@@ -91,7 +91,7 @@ Single Agents are determined by 3 main categories depending on task complexity, 
 - Langchain
 - Crew AI
 - CUDA
-- **Model Context Protocol (MCP):** open standard for agent-to-tool connectivity, enabling agents to communicate with any MCP-compliant server regardless of the underlying framework.
+- Model Context Protocol (MCP): open standard for agent-to-tool connectivity, enabling agents to communicate with any MCP-compliant server regardless of the underlying framework.
 
 ## What is a Multi-agent design pattern
 {: #multi-agent-design-pattern}
