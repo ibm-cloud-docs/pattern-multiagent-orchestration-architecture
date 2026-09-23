@@ -18,7 +18,6 @@ subcollection: pattern-multiagent-orchestration-architecture
 {: #white-paper}
 
 
-A short description of what your white paper is about and what the reader will learn.
 {: shortdesc}
 
 This paper outlines design patterns, implementation approaches, and governance controls for building enterprise-grade multi-agent systems on IBM Cloud. It explains how watsonx Orchestrate, open protocols such as MCP and A2A, and watsonx.governance can be combined to support interoperable, auditable, and production-ready agentic systems. The guidance is aimed at organizations that need strong governance, hybrid deployment flexibility, and operational control.
