@@ -1,0 +1,29 @@
+toc:
+  properties:
+    subcollection: pattern-multiagent-orchestration-architecture
+    industry: technology
+    use-case: ai
+    audience: solution
+    category: solution_docs
+    content-type: white-paper
+    navigation: hidden
+    href: /docs/pattern-multiagent-orchestration-architecture
+    path: pattern-multiagent-orchestration-architecture
+    label: white-paper
+    description: Production-grade multi-agent systems on IBM Cloud using watsonx Orchestrate, MCP, A2A protocols, with governance and observability.
+    authors:
+    - name: Dwarkanath P Rao
+      title: STSM IBM Cloud
+      job-description: I am an architect for IBM Cloud.
+      image: rao.jpg
+      url: https://www.linkedin.com/in/dwarakanath/
+    - name: Pradeep Kadiyala
+      title: Sr. Architect IBM Cloud
+      job-description: I am an architect for IBM Cloud.
+      image: kp.png
+      url: https://www.linkedin.com/in/pradeepkadiyala1980/
+  entries:
+  - navgroup:
+      id: overview
+      topics:
+      - white-paper.md
