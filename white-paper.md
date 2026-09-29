@@ -2,7 +2,7 @@
 
 copyright:
   years: 2026
-lastupdated: "2026-09-23"
+lastupdated: "2026-09-29"
 
 keywords: multi-agent systems, watsonx orchestrate, agent orchestration, mcp, a2a, watsonx governance, agentic ai, enterprise ai, reference architecture
 
@@ -433,6 +433,26 @@ Observability
 :   Dashboards, alerts, and anomaly detection. A unified observability stack covers all agents in the system, including both infrastructure metrics and agent-level behavioral telemetry. Dashboards surface decision traces, tool call patterns, and confidence distributions alongside standard site reliability engineering (SRE) signals.
 
 Deployment governance must be part of CI/CD automation during the development of agents. This means governance checks — safety tests, guardrail validation, permission audits, and performance regression tests — are executed as automated gates in the pipeline before any agent reaches production. No agent can be deployed without passing its governance baseline.
+
+## Deployment
+{: #deploy}
+
+You can accelerate the deployment of the services used within the Multi-agent orchestration reference architecture through the use of deployable architectures.  
+
+### Before you begin
+{: #deploy-prereqs}
+
+You need the following items to deploy and configure this reference architecture:
+
+* An [IBM Cloud account](https://cloud.ibm.com/registration).
+* Required IAM access policies defined in each of the deployable architecture.
+
+### Provision Architecture
+{: #deploy-provision}
+
+1. [Create and configures an instance of IBM watsonx Orchestrate](https://cloud.ibm.com/catalog/7a4d68b4-cf8b-40cd-a3d1-f49aff526eb3/architecture/deploy-arch-ibm-watsonx-orchestrate-91ae7825-6b75-46f4-a305-c675c95aa3bc-global?catalog_query=aHR0cHM6Ly9jbG91ZC5pYm0uY29tL2NhdGFsb2c%2Fc2VhcmNoPXdhdHNvbngjc2VhcmNoX3Jlc3VsdHM%3D){: external}.
+2. Learn to [develop agents with no code using watsonx Orchestrate](https://developer.ibm.com/tutorials/develop-agents-no-code-watsonx-orchestrate/){: external}.
+3. [Creates and configures an instance of IBM watsonx.governance](https://cloud.ibm.com/catalog/7a4d68b4-cf8b-40cd-a3d1-f49aff526eb3/architecture/deploy-arch-ibm-watsonx-governance-5d7c4272-dc45-49e6-8ef3-7f86af1e30d7-global?catalog_query=aHR0cHM6Ly9jbG91ZC5pYm0uY29tL2NhdGFsb2c%2Fc2VhcmNoPXdhdHNvbngjc2VhcmNoX3Jlc3VsdHM%3D){: external}.
 
 ## References
 {: #references}
