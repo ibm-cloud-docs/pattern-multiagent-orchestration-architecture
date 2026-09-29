@@ -59,7 +59,7 @@ Tools
 
 A system design takes you through all aspects of a single-agent solution.
 
-![Single-agent design pattern](image/single-agent.png "Diagram showing single-agent components including system prompt, reasoning loop, memory store, and tool registry"){: caption="Single-agent design pattern" caption-side="bottom"}
+![Single-agent design pattern](images/single-agent.png "Diagram showing single-agent components including system prompt, reasoning loop, memory store, and tool registry"){: caption="Single-agent design pattern" caption-side="bottom"}
 
 In high-level system context with tools and services, a single-agent architecture is composed of four core layers:
 
@@ -134,7 +134,7 @@ Every additional agent-to-agent hop introduces an independent probability of fai
 
 A central agent receives the goal, decomposes it into sub-tasks, and delegates each to a specialized agent. It aggregates results and resolves conflicts before returning a final output. This is the multi-agent analogue of an API gateway: one entry point, many backend specialists.
 
-![Coordinator or Dispatcher pattern](image/coordinator.png "Diagram showing coordinator agent decomposing user goal and delegating sub-tasks to specialist agents"){: caption="Coordinator or Dispatcher pattern" caption-side="bottom"}
+![Coordinator or Dispatcher pattern](images/coordinator.png "Diagram showing coordinator agent decomposing user goal and delegating sub-tasks to specialist agents"){: caption="Coordinator or Dispatcher pattern" caption-side="bottom"}
 
 #### Engineering considerations
 {: #coordinator-engineering}
@@ -155,7 +155,7 @@ Failure mode
 
 Agents are organized in layers where higher-level agents plan and lower-level agents execute. Enables complex goal decomposition across multiple tiers of specialization. A central agent routes tasks to domain experts, who might themselves further decompose work to sub-specialists.
 
-![Hierarchical orchestration pattern](image/Hierarchical.png "Diagram showing multi-tier agent hierarchy with supervisor agent delegating to domain agents and sub-agents"){: caption="Hierarchical orchestration pattern" caption-side="bottom"}
+![Hierarchical orchestration pattern](images/Hierarchical.png "Diagram showing multi-tier agent hierarchy with supervisor agent delegating to domain agents and sub-agents"){: caption="Hierarchical orchestration pattern" caption-side="bottom"}
 
 #### Engineering considerations
 {: #hierarchical-engineering}
@@ -179,7 +179,7 @@ HITL gate
 
 Agents operate in a fixed pipeline where the output of one agent becomes the input of the next. Best for tasks with clear, ordered dependencies. This is the most deterministic and lowest-latency-variance multi-agent pattern because a predefined workflow agent — not an LLM — governs the transition between steps.
 
-![Sequential pipeline pattern](image/Sequential.png "Diagram showing sequential agent pipeline where each agent processes output from previous step"){: caption="Sequential pipeline pattern" caption-side="bottom"}
+![Sequential pipeline pattern](images/Sequential.png "Diagram showing sequential agent pipeline where each agent processes output from previous step"){: caption="Sequential pipeline pattern" caption-side="bottom"}
 
 #### Engineering considerations
 {: #sequential-engineering}
@@ -200,7 +200,7 @@ Failure mode
 
 Multiple agents work on independent sub-tasks simultaneously and results are merged. Reduces latency for tasks that can be parallelized, such as a primary agent spawning parallel reviewers to independently check an infrastructure deployment request for security, performance, and cost before a gather step consolidates findings.
 
-![Concurrent (Parallel fan-out / gather) pattern](image/Concurrent.png "Diagram showing parallel execution across multiple agents with a subsequent gather step"){: caption="Concurrent (Parallel fan-out / gather) pattern" caption-side="bottom"}
+![Concurrent (Parallel fan-out / gather) pattern](images/Concurrent.png "Diagram showing parallel execution across multiple agents with a subsequent gather step"){: caption="Concurrent (Parallel fan-out / gather) pattern" caption-side="bottom"}
 
 #### Engineering considerations
 {: #concurrent-engineering}
@@ -221,7 +221,7 @@ Failure mode
 
 A producer agent generates output; a critic/evaluator agent scores it against defined criteria; feedback is passed back and the producer revises. The loop repeats until a quality threshold or maximum iteration count is reached.
 
-![Loop (Evaluator-optimizer) pattern](image/Loop.png "Diagram showing iterative loop between producer agent and critic evaluator agent with threshold check"){: caption="Loop (Evaluator-optimizer) pattern" caption-side="bottom"}
+![Loop (Evaluator-optimizer) pattern](images/Loop.png "Diagram showing iterative loop between producer agent and critic evaluator agent with threshold check"){: caption="Loop (Evaluator-optimizer) pattern" caption-side="bottom"}
 
 #### Engineering considerations
 {: #loop-engineering}
@@ -239,7 +239,7 @@ Cost
 
 Multiple agents with different perspectives or roles participate in a shared conversation thread, observed and optionally steered by a moderator (which may be a human, an agent, or both), converging on a consensus response.
 
-![Group chat / Collaborative synthesis pattern](image/Collaborative.png "Diagram showing multi-agent collaborative chat with moderator and participant agents in a shared thread"){: caption="Group chat / Collaborative synthesis pattern" caption-side="bottom"}
+![Group chat / Collaborative synthesis pattern](images/Collaborative.png "Diagram showing multi-agent collaborative chat with moderator and participant agents in a shared thread"){: caption="Group chat / Collaborative synthesis pattern" caption-side="bottom"}
 
 #### Engineering considerations
 {: #group-chat-engineering}
@@ -260,7 +260,7 @@ HITL
 
 Control passes explicitly from one specialist agent to another as context requirements change, with only one agent active at a time. Handoff orchestration is the canonical implementation, illustrated by a support scenario: triage agent → technical infrastructure agent → financial resolution agent → customer support, with each agent deciding when to redirect.
 
-![Handoff (Peer-to-peer) pattern](image/handoff.png "Diagram showing stateful task handoff from one specialized agent to another sequentially"){: caption="Handoff (Peer-to-peer) pattern" caption-side="bottom"}
+![Handoff (Peer-to-peer) pattern](images/handoff.png "Diagram showing stateful task handoff from one specialized agent to another sequentially"){: caption="Handoff (Peer-to-peer) pattern" caption-side="bottom"}
 
 #### Engineering considerations
 {: #handoff-engineering}
@@ -281,7 +281,7 @@ Failure mode
 
 A manager agent maintains a live task-and-progress ledger, dynamically assigns and reprioritizes sub-tasks across specialist agents, and loops until the goal is evaluated as complete. Derived from Microsoft Research's MagenticOne system, this is the least deterministic pattern in either vendor's catalog, designed specifically for open-ended problems that do not have a predetermined plan of approach.
 
-![Magentic (Dynamic manager) orchestration pattern](image/Manager.png "Diagram showing dynamic manager maintaining task ledger and allocating tasks to specialist agents iteratively"){: caption="Magentic (Dynamic manager) orchestration pattern" caption-side="bottom"}
+![Magentic (Dynamic manager) orchestration pattern](images/Manager.png "Diagram showing dynamic manager maintaining task ledger and allocating tasks to specialist agents iteratively"){: caption="Magentic (Dynamic manager) orchestration pattern" caption-side="bottom"}
 
 Architectural guidance: use with caution.
 {: note}
@@ -302,7 +302,7 @@ Consistent with a preference for structured, predictable workflows: Magentic orc
 
 Workflow routing is driven by conditional rules or business logic rather than a fixed topology or an LLM-driven decision. Allows dynamic branching based on intermediate results while remaining fully deterministic and auditable — the routing function is ordinary code, not a model call.
 
-![Custom logic / Conditional routing pattern](image/Conditional.png "Diagram showing code-based rule evaluation routing tasks deterministically to distinct agent branches"){: caption="Custom logic / Conditional routing pattern" caption-side="bottom"}
+![Custom logic / Conditional routing pattern](images/Conditional.png "Diagram showing code-based rule evaluation routing tasks deterministically to distinct agent branches"){: caption="Custom logic / Conditional routing pattern" caption-side="bottom"}
 
 #### Cross-reference
 {: #custom-logic-cross-reference}
@@ -326,7 +326,7 @@ Azure
 
 A human review or approval step is embedded at defined points in the workflow. Critical for high-stakes decisions where full autonomy is not acceptable.
 
-![Human-in-the-loop (HITL) gate pattern](image/hitl.png "Diagram showing human review checkpoint pausing autonomous execution until explicit approval is granted"){: caption="Human-in-the-loop (HITL) gate pattern" caption-side="bottom"}
+![Human-in-the-loop (HITL) gate pattern](images/hitl.png "Diagram showing human review checkpoint pausing autonomous execution until explicit approval is granted"){: caption="Human-in-the-loop (HITL) gate pattern" caption-side="bottom"}
 
 #### Design decisions for every HITL gate
 {: #hitl-design-decisions}
